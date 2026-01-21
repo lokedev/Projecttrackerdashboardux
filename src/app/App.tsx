@@ -342,7 +342,7 @@ export default function App() {
 
       {/* Header */}
       <header className="relative z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="w-full px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-black rounded-lg shadow-sm">
               <Building2 className="w-6 h-6 text-white" />
@@ -359,7 +359,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10 space-y-12 bg-[#f4f4f5] min-h-screen mb-[400px]">
+      <main className="relative z-10 w-full px-8 py-10 space-y-12 bg-[#f4f4f5] min-h-screen mb-[600px]">
         {projects.length === 0 ? (
           <div className="text-center py-32 opacity-50">
             <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -475,11 +475,11 @@ export default function App() {
       </main>
 
       {/* Footer with Image (Fixed Reveal Effect) */}
-      <footer className="fixed bottom-0 left-0 w-full h-[400px] z-0">
+      <footer className="fixed bottom-0 left-0 w-full h-[600px] z-0">
         {/* Background Image Container */}
         <div className="w-full h-full relative overflow-hidden">
           <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            className="absolute inset-0 bg-cover bg-bottom bg-no-repeat"
             style={{ backgroundImage: `url('/bg-footer.jpg')` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
