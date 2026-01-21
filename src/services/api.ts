@@ -95,8 +95,9 @@ export const api = {
 
         // Handle Task Syncing (Upsert is easiest for MVP)
         if (tasks && tasks.length > 0) {
+            console.log('Syncing tasks for phase:', id, tasks);
             const tasksToUpsert = tasks.map((t: any) => ({
-                id: t.id.includes('task-') ? undefined : t.id, // If it's a temp ID, let DB gen new one
+                id: (t.id && t.id.includes('task-')) ? undefined : t.id, // Only use undefined if it's a temp ID
                 phase_id: id,
                 name: t.name,
                 completed: t.completed,
