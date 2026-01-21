@@ -215,7 +215,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 tracking-tight">Project Tracker</h1>
-              <p className="text-xs text-gray-500 font-medium">Dashboard • v2.0</p>
+              <p className="text-xs text-gray-500 font-medium">Dashboard</p>
             </div>
           </div>
           <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md">
@@ -261,12 +261,14 @@ export default function App() {
                       ) : (
                         <>
                           <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
-                          <button onClick={() => startEditingProject(project)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600" title="Rename Project">
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDeleteProject(project.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500" title="Delete Project">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => startEditingProject(project)} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-blue-600 transition-colors" title="Rename Project">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDeleteProject(project.id)} className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors" title="Delete Project">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -324,7 +326,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="relative z-10 max-w-7xl mx-auto px-6 py-8 text-center border-t border-gray-200 mt-12 mb-8">
-        <p className="text-xs text-gray-400">Project Tracker v2.1 • Deployed {new Date().toLocaleDateString()}</p>
+        <p className="text-xs text-gray-400">Deployed: {new Date().toLocaleString()}</p>
       </footer>
 
       {/* Dialogs */}
