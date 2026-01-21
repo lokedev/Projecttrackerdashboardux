@@ -19,6 +19,9 @@ interface PhaseExpandedViewProps {
     onEditTask: (taskId: string, newName: string) => void;
     onDeleteTask: (taskId: string) => void;
     onMoveTask: (taskId: string, targetPhaseId: string) => void;
+    onAddSubtask: (taskId: string, name: string) => void;
+    onToggleSubtask: (subtaskId: string, taskId: string) => void;
+    onDeleteSubtask: (subtaskId: string, taskId: string) => void;
 }
 
 const statusConfig = {
@@ -38,6 +41,9 @@ export function PhaseExpandedView({
     onEditTask,
     onDeleteTask,
     onMoveTask,
+    onAddSubtask,
+    onToggleSubtask,
+    onDeleteSubtask,
 }: PhaseExpandedViewProps) {
     const [newTaskName, setNewTaskName] = useState("");
     const [newTaskDate, setNewTaskDate] = useState("");
