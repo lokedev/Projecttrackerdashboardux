@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/services/api";
 import { PhaseCard, Phase, PhaseStatus } from "@/app/components/PhaseCard";
-import { PhaseDetails } from "@/app/components/PhaseDetails";
+import { PhaseExpandedView } from "@/app/components/PhaseExpandedView";
 import { AddProjectDialog } from "@/app/components/AddProjectDialog";
 import { AddPhaseDialog } from "@/app/components/AddPhaseDialog";
 import { Task } from "@/app/components/TaskItem";
@@ -32,7 +32,6 @@ export default function App() {
   const [targetProjectIdForPhase, setTargetProjectIdForPhase] = useState<string | null>(null);
 
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
-  const [phaseDetailsOpen, setPhaseDetailsOpen] = useState(false);
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editProjectName, setEditProjectName] = useState("");
@@ -184,7 +183,7 @@ export default function App() {
     if (!selectedPhaseId) return;
     const id = selectedPhaseId;
     setPhases(prev => prev.filter(p => p.id !== id));
-    setPhaseDetailsOpen(false);
+    setSelectedPhaseId(null);
     await api.deletePhase(id);
   };
 
@@ -236,6 +235,7 @@ export default function App() {
           projects.map(project => {
             const projectPhases = phases.filter(p => p.project_id === project.id);
             const progress = getProjectProgress(project.id);
+            const isSelectedPhaseInThisProject = selectedPhase?.project_id === project.id;
 
             return (
               <section key={project.id} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -301,7 +301,7 @@ export default function App() {
                           <div key={phase.id} className="flex items-center gap-4 flex-shrink-0">
                             <PhaseCard
                               phase={phase}
-                              onClick={() => { setSelectedPhaseId(phase.id); setPhaseDetailsOpen(true); }}
+                              onClick={() => setSelectedPhaseId(selectedPhaseId === phase.id ? null : phase.id)} // Toggle selection
                               onNameChange={handlePhaseNameChange}
                             />
                             <ChevronRight className="w-6 h-6 text-gray-300" />
@@ -318,6 +318,18 @@ export default function App() {
                     )}
                   </div>
                 </div>
+
+                {/* Expanded Phase View - Inline (Netflix Style) */}
+                {isSelectedPhaseInThisProject && selectedPhase && (
+                  <PhaseExpandedView
+                    phase={selectedPhase}
+                    tasks={selectedPhase.tasks}
+                    onClose={() => setSelectedPhaseId(null)}
+                    onToggleTask={handleToggleTask}
+                    onAddTask={handleAddTask}
+                    onDeletePhase={handleDeletePhase}
+                  />
+                )}
               </section>
             );
           })
@@ -332,15 +344,6 @@ export default function App() {
       {/* Dialogs */}
       <AddProjectDialog open={addProjectDialogOpen} onClose={() => setAddProjectDialogOpen(false)} onAdd={handleAddProject} />
       <AddPhaseDialog open={addPhaseDialogOpen} onClose={() => setAddPhaseDialogOpen(false)} onAdd={handleAddPhase} />
-      <PhaseDetails
-        open={phaseDetailsOpen}
-        onClose={() => setPhaseDetailsOpen(false)}
-        phase={selectedPhase}
-        tasks={selectedPhase?.tasks || []}
-        onToggleTask={handleToggleTask}
-        onAddTask={handleAddTask}
-        onDeletePhase={handleDeletePhase}
-      />
     </div>
   );
 }
