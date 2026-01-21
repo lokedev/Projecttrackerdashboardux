@@ -9,11 +9,15 @@ import { Progress } from "@/app/components/ui/progress";
 
 interface PhaseExpandedViewProps {
     phase: Phase;
+    projectPhases: Phase[];
     tasks: Task[];
     onClose: () => void;
     onToggleTask: (taskId: string) => void;
     onAddTask: (taskName: string, dueDate?: string) => void;
     onDeletePhase: () => void;
+    onEditTask: (taskId: string, newName: string) => void;
+    onDeleteTask: (taskId: string) => void;
+    onMoveTask: (taskId: string, targetPhaseId: string) => void;
 }
 
 const statusConfig = {
@@ -24,11 +28,15 @@ const statusConfig = {
 
 export function PhaseExpandedView({
     phase,
+    projectPhases,
     tasks,
     onClose,
     onToggleTask,
     onAddTask,
     onDeletePhase,
+    onEditTask,
+    onDeleteTask,
+    onMoveTask,
 }: PhaseExpandedViewProps) {
     const [newTaskName, setNewTaskName] = useState("");
     const [newTaskDate, setNewTaskDate] = useState("");
@@ -56,6 +64,9 @@ export function PhaseExpandedView({
     };
 
     const statusInfo = statusConfig[phase.status] || statusConfig["not-started"];
+
+    // map phases to simple format for task item
+    const simplifiedPhases = projectPhases.map(p => ({ id: p.id, name: p.name }));
 
     return (
         <div ref={viewRef} className="w-full mt-6 mb-8 border border-blue-200 rounded-xl bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
@@ -113,7 +124,15 @@ export function PhaseExpandedView({
                             </div>
                         ) : (
                             tasks.map((task) => (
-                                <TaskItem key={task.id} task={task} onToggle={onToggleTask} />
+                                <TaskItem
+                                    key={task.id}
+                                    task={{ ...task, phase_id: phase.id }} // Ensure phase_id is passed
+                                    phases={simplifiedPhases}
+                                    onToggle={onToggleTask}
+                                    onEdit={onEditTask}
+                                    onDelete={onDeleteTask}
+                                    onMove={onMoveTask}
+                                />
                             ))
                         )}
                     </div>

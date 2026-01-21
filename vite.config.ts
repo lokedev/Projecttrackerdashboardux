@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   define: {
-    '__BUILD_TIME__': JSON.stringify(new Date().toLocaleString()),
+    '__BUILD_TIME__': JSON.stringify(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })),
   },
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if

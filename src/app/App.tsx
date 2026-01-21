@@ -216,6 +216,94 @@ export default function App() {
     }
   };
 
+  const handleEditTask = async (taskId: string, newName: string) => {
+    if (!selectedPhaseId) return;
+    try {
+      await api.updateTask(taskId, { name: newName });
+
+      // Optimistic local update
+      setPhases(prev => prev.map(p => {
+        if (p.id === selectedPhaseId) {
+          const newTasks = p.tasks.map(t => t.id === taskId ? { ...t, name: newName } : t);
+          return { ...p, tasks: newTasks };
+        }
+        return p;
+      }));
+    } catch (e) {
+      console.error("Failed to edit task:", e);
+      refreshData();
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!selectedPhaseId) return;
+    if (!confirm("Delete this task?")) return;
+
+    try {
+      await api.deleteTask(taskId);
+
+      // Optimistic local update
+      setPhases(prev => prev.map(p => {
+        if (p.id === selectedPhaseId) {
+          const newTasks = p.tasks.filter(t => t.id !== taskId);
+          const metrics = calculateMetrics(newTasks);
+          return { ...p, tasks: newTasks, ...metrics };
+        }
+        return p;
+      }));
+
+      // Sync phase metrics
+      const phase = phases.find(p => p.id === selectedPhaseId);
+      if (phase) {
+        const newTasks = phase.tasks.filter(t => t.id !== taskId);
+        const metrics = calculateMetrics(newTasks);
+        await api.updatePhase(selectedPhaseId, {
+          progress: metrics.progress,
+          status: metrics.status
+        });
+      }
+    } catch (e) {
+      console.error("Failed to delete task:", e);
+      refreshData();
+    }
+  };
+
+  const handleMoveTask = async (taskId: string, targetPhaseId: string) => {
+    if (!selectedPhaseId) return;
+
+    try {
+      await api.updateTask(taskId, { phase_id: targetPhaseId });
+
+      // Optimistic: Remove from current phase
+      setPhases(prev => prev.map(p => {
+        if (p.id === selectedPhaseId) {
+          const newTasks = p.tasks.filter(t => t.id !== taskId);
+          const metrics = calculateMetrics(newTasks);
+          return { ...p, tasks: newTasks, ...metrics };
+        }
+        // Add to target phase (if loaded)
+        if (p.id === targetPhaseId) {
+          const taskToMove = phases.find(ph => ph.id === selectedPhaseId)?.tasks.find(t => t.id === taskId);
+          if (taskToMove) {
+            const newTasks = [...p.tasks, { ...taskToMove, phase_id: targetPhaseId }]; // Update phase_id
+            const metrics = calculateMetrics(newTasks);
+            return { ...p, tasks: newTasks, ...metrics };
+          }
+        }
+        return p;
+      }));
+
+      // We should ideally sync metrics for BOTH source and target phases in backend
+      // Trigger a refresh to be safe and accurate with metrics
+      await refreshData();
+    } catch (e) {
+      console.error("Failed to move task:", e);
+      alert("Failed to move task.");
+      refreshData();
+    }
+  };
+
+
   const handleDeletePhase = async () => {
     if (!selectedPhaseId) return;
     const id = selectedPhaseId;
@@ -271,7 +359,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10 space-y-12">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10 space-y-12 bg-[#f4f4f5] min-h-screen mb-[400px]">
         {projects.length === 0 ? (
           <div className="text-center py-32 opacity-50">
             <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
@@ -364,40 +452,43 @@ export default function App() {
                       </>
                     )}
                   </div>
+                  {/* Expanded Phase View - Inline (Netflix Style) */}
+                  {isSelectedPhaseInThisProject && selectedPhase && (
+                    <PhaseExpandedView
+                      phase={selectedPhase}
+                      projectPhases={projectPhases}
+                      tasks={selectedPhase.tasks}
+                      onClose={() => setSelectedPhaseId(null)}
+                      onToggleTask={handleToggleTask}
+                      onAddTask={handleAddTask}
+                      onDeletePhase={handleDeletePhase}
+                      onEditTask={handleEditTask}
+                      onDeleteTask={handleDeleteTask}
+                      onMoveTask={handleMoveTask}
+                    />
+                  )}
                 </div>
-
-                {/* Expanded Phase View - Inline (Netflix Style) */}
-                {isSelectedPhaseInThisProject && selectedPhase && (
-                  <PhaseExpandedView
-                    phase={selectedPhase}
-                    tasks={selectedPhase.tasks}
-                    onClose={() => setSelectedPhaseId(null)}
-                    onToggleTask={handleToggleTask}
-                    onAddTask={handleAddTask}
-                    onDeletePhase={handleDeletePhase}
-                  />
-                )}
               </section>
             );
           })
         )}
       </main>
 
-      {/* Footer with Image */}
-      <footer className="relative w-full mt-24">
+      {/* Footer with Image (Fixed Reveal Effect) */}
+      <footer className="fixed bottom-0 left-0 w-full h-[400px] z-0">
         {/* Background Image Container */}
-        <div className="w-full h-[400px] md:h-[500px] relative overflow-hidden">
+        <div className="w-full h-full relative overflow-hidden">
           <div
-            className="absolute inset-0 bg-contain bg-bottom bg-no-repeat opacity-90"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url('/bg-footer.jpg')` }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-[#f4f4f5]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
 
         {/* Text Content */}
-        <div className="absolute bottom-4 left-0 right-0 text-center">
-          <p className="text-xs text-gray-500 font-medium bg-white/80 py-1 px-3 rounded-full inline-block backdrop-blur-sm shadow-sm">
-            Deployed: {buildTime}
+        <div className="absolute bottom-6 left-0 right-0 text-center">
+          <p className="text-xs text-white/90 font-medium bg-black/40 py-1.5 px-4 rounded-full inline-block backdrop-blur-md shadow-lg border border-white/10">
+            Deployed: {buildTime} (EST)
           </p>
         </div>
       </footer>
