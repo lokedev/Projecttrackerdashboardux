@@ -137,4 +137,32 @@ export const api = {
         const { error } = await supabase.from('phases').delete().eq('id', id);
         if (error) throw error;
     },
+
+    createTask: async (phaseId: string, name: string, dueDate?: string) => {
+        const { data, error } = await supabase
+            .from('tasks')
+            .insert([{ phase_id: phaseId, name, due_date: dueDate, completed: false }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    updateTask: async (taskId: string, updates: any) => {
+        const { data, error } = await supabase
+            .from('tasks')
+            .update(updates)
+            .eq('id', taskId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    deleteTask: async (taskId: string) => {
+        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+        if (error) throw error;
+    }
 };

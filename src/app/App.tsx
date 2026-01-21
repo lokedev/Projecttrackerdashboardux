@@ -152,31 +152,79 @@ export default function App() {
 
   const handleToggleTask = async (taskId: string) => {
     if (!selectedPhaseId) return;
+
+    // Find phase and task
     const phase = phases.find(p => p.id === selectedPhaseId);
     if (!phase) return;
+    const task = phase.tasks.find(t => t.id === taskId);
+    if (!task) return;
 
-    const newTasks = phase.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
-    const metrics = calculateMetrics(newTasks);
-    const updatedPhase = { ...phase, tasks: newTasks, ...metrics };
+    // Optimistic Update
+    const newCompletedStatus = !task.completed;
+    const updatedTasks = phase.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedStatus } : t);
 
-    setPhases(prev => prev.map(p => p.id === selectedPhaseId ? updatedPhase : p));
-    await api.updatePhase(selectedPhaseId, updatedPhase);
+    // Update local state immediately
+    setPhases(prev => prev.map(p => {
+      if (p.id === selectedPhaseId) {
+        const metrics = calculateMetrics(updatedTasks);
+        return { ...p, tasks: updatedTasks, ...metrics };
+      }
+      return p;
+    }));
+
+    // API Call
+    try {
+      await api.updateTask(taskId, { completed: newCompletedStatus });
+      // Also update the phase progress in backend since it changed
+      const metrics = calculateMetrics(updatedTasks);
+      await api.updatePhase(selectedPhaseId, {
+        progress: metrics.progress,
+        status: metrics.status
+        // We don't send tasks here anymore!
+      });
+    } catch (e) {
+      console.error("Failed to toggle task:", e);
+      // Could revert here if needed
+    }
   };
 
   const handleAddTask = async (name: string, due?: string) => {
     if (!selectedPhaseId) return;
-    const phase = phases.find(p => p.id === selectedPhaseId);
-    if (!phase) return;
 
-    const newTask = { id: `temp-${Date.now()}`, name, completed: false, dueDate: due };
-    const newTasks = [...phase.tasks, newTask];
-    const metrics = calculateMetrics(newTasks);
-    const updatedPhase = { ...phase, tasks: newTasks, ...metrics };
+    const tempId = `temp-${Date.now()}`;
+    const newTask: Task = { id: tempId, name, completed: false, dueDate: due };
 
-    setPhases(prev => prev.map(p => p.id === selectedPhaseId ? updatedPhase : p));
-    await api.updatePhase(selectedPhaseId, updatedPhase);
-    const fresh = await api.getPhases(); // Sync needed for ID
-    setPhases(fresh);
+    // Optimistic Update
+    setPhases(prev => prev.map(p => {
+      if (p.id === selectedPhaseId) {
+        const newTasks = [...(p.tasks || []), newTask];
+        const metrics = calculateMetrics(newTasks);
+        return { ...p, tasks: newTasks, ...metrics };
+      }
+      return p;
+    }));
+
+    try {
+      const createdTask = await api.createTask(selectedPhaseId, name, due);
+
+      // Replace temp ID with real ID
+      setPhases(prev => prev.map(p => {
+        if (p.id === selectedPhaseId) {
+          const newTasks = p.tasks.map(t => t.id === tempId ? { ...t, id: createdTask.id } : t);
+          // Recalculate metrics just in case, though they shouldn't change
+          const metrics = calculateMetrics(newTasks);
+          // Sync phase progress to backend
+          api.updatePhase(selectedPhaseId, {
+            progress: metrics.progress,
+            status: metrics.status
+          });
+          return { ...p, tasks: newTasks, ...metrics };
+        }
+        return p;
+      }));
+    } catch (e) {
+      console.error("Failed to create task:", e);
+    }
   };
 
   const handleDeletePhase = async () => {
