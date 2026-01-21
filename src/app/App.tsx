@@ -396,8 +396,13 @@ export default function App() {
         </div>
       </main >
 
+      {/* Footer */}
+      <footer className="max-w-7xl mx-auto px-6 py-6 text-center text-xs text-blue-200/40">
+        <p>Project Tracker v1.0.5 • Deployed {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</p>
+      </footer>
+
       {/* Dialogs */}
-      < AddProjectDialog
+      <AddProjectDialog
         open={addProjectDialogOpen}
         onClose={() => setAddProjectDialogOpen(false)
         }
