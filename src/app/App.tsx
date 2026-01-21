@@ -6,20 +6,10 @@ import { AddProjectDialog } from "@/app/components/AddProjectDialog";
 import { AddPhaseDialog } from "@/app/components/AddPhaseDialog";
 import { Task } from "@/app/components/TaskItem";
 import { Button } from "@/app/components/ui/button";
-import { Plus, ChevronRight, FolderKanban, ChevronsUpDown, Check } from "lucide-react";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/app/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/app/components/ui/popover"
-import { cn } from "@/lib/utils"
+import { Input } from "@/app/components/ui/input";
+import { Progress } from "@/app/components/ui/progress";
+import { Plus, ChevronRight, FolderKanban, Pencil, Check, X, Building2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -27,16 +17,25 @@ interface Project {
 }
 
 interface PhaseWithTasks extends Phase {
+  project_id?: string; // Add project_id to interface
   tasks: Task[];
 }
 
 export default function App() {
   // Projects state
   const [projects, setProjects] = useState<Project[]>([]);
-  const [currentProjectId, setCurrentProjectId] = useState<string>("1");
-
-  // Phases and tasks state
   const [phases, setPhases] = useState<PhaseWithTasks[]>([]);
+
+  // UI State
+  const [addProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
+  const [addPhaseDialogOpen, setAddPhaseDialogOpen] = useState(false);
+  const [targetProjectIdForPhase, setTargetProjectIdForPhase] = useState<string | null>(null);
+
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+  const [phaseDetailsOpen, setPhaseDetailsOpen] = useState(false);
+
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editProjectName, setEditProjectName] = useState("");
 
   // Load data
   useEffect(() => {
@@ -47,9 +46,6 @@ export default function App() {
           api.getPhases(),
         ]);
         setProjects(projectsData);
-        if (projectsData.length > 0 && currentProjectId === "1") {
-          setCurrentProjectId(projectsData[0].id);
-        }
         setPhases(phasesData);
       } catch (error) {
         console.error("Failed to load data:", error);
@@ -58,75 +54,53 @@ export default function App() {
     loadData();
   }, []);
 
-  // Dialog states
-  const [addProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
-  const [addPhaseDialogOpen, setAddPhaseDialogOpen] = useState(false);
-
-  // Phase details state
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
-  const [phaseDetailsOpen, setPhaseDetailsOpen] = useState(false);
-
-  // Get current project
-  const currentProject = projects.find((p) => p.id === currentProjectId);
-  const [openProjectSelect, setOpenProjectSelect] = useState(false);
-
-  // Modern Gradient Background
-  const gradientBg = "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-purple-900 to-slate-900";
-
-  // Calculate phase progress and status
-  const calculatePhaseMetrics = (tasks: Task[]) => {
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter((t) => t.completed).length;
-    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-    let status: PhaseStatus = "not-started";
-    if (completedTasks === totalTasks && totalTasks > 0) {
-      status = "completed";
-    } else if (completedTasks > 0) {
-      status = "in-progress";
-    }
-
-    return { progress, status, completedTasks, totalTasks };
-  };
-
-  // Update phase metrics
-  const updatePhaseMetrics = (phaseId: string) => {
-    setPhases((prevPhases) =>
-      prevPhases.map((phase) => {
-        if (phase.id === phaseId) {
-          const metrics = calculatePhaseMetrics(phase.tasks);
-          return {
-            ...phase,
-            progress: metrics.progress,
-            status: metrics.status,
-            taskCount: metrics.totalTasks,
-            completedTaskCount: metrics.completedTasks,
-          };
-        }
-        return phase;
-      })
-    );
-  };
+  // Background Style (Sketch + Gradient)
+  // Simulating the "pencil sketch" texture with CSS patterns if image is not available
+  const sketchTexture = `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E")`;
 
   // Handlers
   const handleAddProject = async (projectName: string) => {
     try {
-      const newProject = await api.createProject({
-        name: projectName
-      });
+      const newProject = await api.createProject({ name: projectName });
       setProjects([...projects, newProject]);
-      setProjects([...projects, newProject]);
-      setCurrentProjectId(newProject.id); // Always switch to new project
     } catch (e) {
       console.error(e);
     }
   };
 
+  const handleUpdateProjectName = async (projectId: string) => {
+    if (!editProjectName.trim()) return;
+
+    // Optimistic
+    setProjects(prev => prev.map(p => p.id === projectId ? { ...p, name: editProjectName } : p));
+    setEditingProjectId(null);
+
+    try {
+      await api.updateProject(projectId, editProjectName);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const startEditingProject = (project: Project) => {
+    setEditingProjectId(project.id);
+    setEditProjectName(project.name);
+  };
+
+  const handleOpenAddPhase = (projectId: string) => {
+    setTargetProjectIdForPhase(projectId);
+    setAddPhaseDialogOpen(true);
+  };
+
   const handleAddPhase = async (phaseName: string) => {
-    // Optimistic UI update
+    if (!targetProjectIdForPhase) return;
+
+    const projectId = targetProjectIdForPhase;
+    // Optimistic
     const tempId = `temp-${Date.now()}`;
     const newPhase = {
       name: phaseName,
+      project_id: projectId,
       progress: 0,
       status: "not-started" as PhaseStatus,
       taskCount: 0,
@@ -137,284 +111,208 @@ export default function App() {
     setPhases([...phases, { ...newPhase, id: tempId } as any]);
 
     try {
-      const savedPhase = await api.createPhase(newPhase);
-      // Replace temp phase with real one
+      const savedPhase = await api.createPhase({ ...newPhase, project_id: projectId });
       setPhases(prev => prev.map(p => p.id === tempId ? savedPhase : p));
     } catch (e) {
       console.error(e);
-      // Revert on error
       setPhases(prev => prev.filter(p => p.id !== tempId));
     }
   };
 
+  // ... (Other phase handlers same as before: handlePhaseNameChange, handleToggleTask, handleAddTask, handleDeletePhase)
+  // Copied for brevity, relying on previous implementation logic but adapted for simpler state
   const handlePhaseNameChange = async (phaseId: string, newName: string) => {
-    const phase = phases.find(p => p.id === phaseId);
-    if (!phase) return;
-
-    // Optimistic update
-    setPhases((prevPhases) =>
-      prevPhases.map((p) =>
-        p.id === phaseId ? { ...p, name: newName } : p
-      )
-    );
-
-    try {
-      await api.updatePhase(phaseId, { name: newName });
-    } catch (e) {
-      console.error(e);
-      // Revert if needed, simply reloading for now simpler
-    }
+    setPhases(prev => prev.map(p => p.id === phaseId ? { ...p, name: newName } : p));
+    await api.updatePhase(phaseId, { name: newName });
   };
 
-  const handlePhaseClick = (phaseId: string) => {
-    setSelectedPhaseId(phaseId);
-    setPhaseDetailsOpen(true);
+  const calculateMetrics = (tasks: Task[]) => {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    return {
+      progress: total > 0 ? Math.round((completed / total) * 100) : 0,
+      status: (completed === total && total > 0) ? 'completed' : (completed > 0 ? 'in-progress' : 'not-started') as PhaseStatus,
+      taskCount: total,
+      completedTaskCount: completed
+    };
   };
 
   const handleToggleTask = async (taskId: string) => {
     if (!selectedPhaseId) return;
-
     const phase = phases.find(p => p.id === selectedPhaseId);
     if (!phase) return;
 
-    const updatedTasks = phase.tasks.map(t =>
-      t.id === taskId ? { ...t, completed: !t.completed } : t
-    );
-    const metrics = calculatePhaseMetrics(updatedTasks);
+    const newTasks = phase.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
+    const metrics = calculateMetrics(newTasks);
+    const updatedPhase = { ...phase, tasks: newTasks, ...metrics };
 
-    const updatedPhase = {
-      ...phase,
-      tasks: updatedTasks,
-      progress: metrics.progress,
-      status: metrics.status,
-      taskCount: metrics.totalTasks,
-      completedTaskCount: metrics.completedTasks
-    };
-
-    // Optimistic update
     setPhases(prev => prev.map(p => p.id === selectedPhaseId ? updatedPhase : p));
-
-    try {
-      await api.updatePhase(selectedPhaseId, updatedPhase);
-    } catch (e) { console.error(e); }
+    await api.updatePhase(selectedPhaseId, updatedPhase);
   };
 
-  const handleAddTask = async (taskName: string, dueDate?: string) => {
+  const handleAddTask = async (name: string, due?: string) => {
     if (!selectedPhaseId) return;
-
     const phase = phases.find(p => p.id === selectedPhaseId);
     if (!phase) return;
 
-    const tempTaskId = `temp-task-${Date.now()}`;
-    const newTask: Task = {
-      id: tempTaskId,
-      name: taskName,
-      completed: false,
-      dueDate, // Pass through, API service handles casing mapping if needed
-    };
+    const newTask = { id: `temp-${Date.now()}`, name, completed: false, dueDate: due };
+    const newTasks = [...phase.tasks, newTask];
+    const metrics = calculateMetrics(newTasks);
+    const updatedPhase = { ...phase, tasks: newTasks, ...metrics };
 
-    // UI Update - add task locally first
-    const updatedTasks = [...phase.tasks, newTask];
-    const metrics = calculatePhaseMetrics(updatedTasks);
-    // ... update logic common to toggle
-
-    const updatedPhase = {
-      ...phase,
-      tasks: updatedTasks,
-      ...metrics
-    };
-
-    setPhases((prev) => prev.map(p => p.id === selectedPhaseId ? updatedPhase : p));
-
-    try {
-      // Sync entire phase state including new task
-      await api.updatePhase(selectedPhaseId, updatedPhase);
-      // Ideally we should reload the phase to get the real Task ID back
-      // But for plain MVP, simply reloading payload works or accepting eventual consistency
-      const freshPhases = await api.getPhases();
-      setPhases(freshPhases);
-    } catch (e) { console.error(e); }
+    setPhases(prev => prev.map(p => p.id === selectedPhaseId ? updatedPhase : p));
+    await api.updatePhase(selectedPhaseId, updatedPhase);
+    const fresh = await api.getPhases(); // Sync needed for ID
+    setPhases(fresh);
   };
 
   const handleDeletePhase = async () => {
     if (!selectedPhaseId) return;
-
-    const idToDelete = selectedPhaseId;
-    setPhases((prevPhases) => prevPhases.filter((phase) => phase.id !== idToDelete));
+    const id = selectedPhaseId;
+    setPhases(prev => prev.filter(p => p.id !== id));
     setPhaseDetailsOpen(false);
-    setSelectedPhaseId(null);
-
-    try {
-      await api.deletePhase(idToDelete);
-    } catch (e) { console.error(e); }
+    await api.deletePhase(id);
   };
 
-  const selectedPhase = phases.find((p) => p.id === selectedPhaseId) || null;
+  const selectedPhase = phases.find(p => p.id === selectedPhaseId) || null;
+
+  // Project Progress Calculation
+  const getProjectProgress = (projectId: string) => {
+    const projectPhases = phases.filter(p => p.project_id === projectId);
+    if (projectPhases.length === 0) return 0;
+    const totalProgress = projectPhases.reduce((acc, p) => acc + p.progress, 0);
+    return Math.round(totalProgress / projectPhases.length);
+  };
 
   return (
-    <div className={`min-h-screen ${gradientBg} text-white`}>
+    <div className="min-h-screen text-slate-900 bg-[#f4f4f5] relative font-sans">
+      {/* Texture Overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-40 z-0 mix-blend-multiply"
+        style={{ backgroundImage: sketchTexture }}
+      />
+
       {/* Header */}
-      <header className="bg-white/10 backdrop-blur-md border-b border-white/10 shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20">
-                  <FolderKanban className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white tracking-tight">
-                    Project Tracker
-                  </h1>
-                  <p className="text-xs text-blue-200/80 font-medium">
-                    Dashboard & Analytics
-                  </p>
-                </div>
-              </div>
-
-              {/* Project Selector */}
-              <div className="h-8 w-px bg-white/10 mx-2" />
-
-              <Popover open={openProjectSelect} onOpenChange={setOpenProjectSelect}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openProjectSelect}
-                    className="w-[250px] justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white"
-                  >
-                    {currentProject?.name || "Select project..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[250px] p-0 bg-slate-900 border-slate-700">
-                  <Command>
-                    <CommandInput placeholder="Search project..." className="text-white" />
-                    <CommandEmpty>No project found.</CommandEmpty>
-                    <CommandGroup>
-                      {projects.map((project) => (
-                        <CommandItem
-                          key={project.id}
-                          value={project.name}
-                          onSelect={() => {
-                            setCurrentProjectId(project.id)
-                            setOpenProjectSelect(false)
-                          }}
-                          className="text-white aria-selected:bg-white/10"
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              currentProjectId === project.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {project.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+      <header className="relative z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-black rounded-lg shadow-sm">
+              <Building2 className="w-6 h-6 text-white" />
             </div>
-
-            <Button
-              onClick={() => setAddProjectDialogOpen(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white border-0 shadow-lg shadow-blue-500/25"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Project
-            </Button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Project Tracker</h1>
+              <p className="text-xs text-gray-500 font-medium">Dashboard • v2.0</p>
+            </div>
           </div>
+          <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md">
+            <Plus className="w-4 h-4 mr-2" /> New Project
+          </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white/90">
-                {currentProject ? `${currentProject.name} Phases` : 'Select a Project'}
-              </h2>
-              <Button
-                variant="secondary"
-                onClick={() => setAddPhaseDialogOpen(true)}
-                disabled={!currentProject}
-                className="bg-white/10 hover:bg-white/20 text-white border-0"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Phase
-              </Button>
-            </div>
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10 space-y-12">
+        {projects.length === 0 ? (
+          <div className="text-center py-32 opacity-50">
+            <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-xl font-medium text-gray-400">No projects found</h3>
+            <p className="text-sm text-gray-400 mt-2">Create a new project to get started</p>
+          </div>
+        ) : (
+          projects.map(project => {
+            const projectPhases = phases.filter(p => p.project_id === project.id);
+            const progress = getProjectProgress(project.id);
 
-            {/* Phase Flow */}
-            <div className="relative">
-              <div className="flex items-center gap-4 overflow-x-auto pb-4 group">
-                {phases.map((phase, index) => (
-                  <div key={phase.id} className="flex items-center gap-4 group">
-                    <PhaseCard
-                      phase={phase}
-                      onClick={() => handlePhaseClick(phase.id)}
-                      onNameChange={handlePhaseNameChange}
-                    />
-                    {index < phases.length - 1 && (
-                      <ChevronRight className="w-6 h-6 text-gray-300 flex-shrink-0" />
+            return (
+              <section key={project.id} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Project Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-200/60">
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-3">
+                      {editingProjectId === project.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={editProjectName}
+                            onChange={(e) => setEditProjectName(e.target.value)}
+                            className="h-9 w-64 text-lg font-bold bg-white"
+                            autoFocus
+                          />
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleUpdateProjectName(project.id)}>
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-red-400 hover:text-red-500 hover:bg-red-50" onClick={() => setEditingProjectId(null)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
+                          <button onClick={() => startEditingProject(project)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 max-w-md group">
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-gray-900 to-gray-700 transition-all duration-1000 ease-out"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600 tabular-nums">{progress}% Complete</span>
+                    </div>
+                  </div>
+                  <Button variant="outline" onClick={() => handleOpenAddPhase(project.id)} className="bg-white hover:bg-gray-50 border-gray-200">
+                    <Plus className="w-4 h-4 mr-2" /> Add Phase
+                  </Button>
+                </div>
+
+                {/* Phases Horizontal Scroll */}
+                <div className="relative">
+                  <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide">
+                    {projectPhases.length === 0 ? (
+                      <div className="w-full py-12 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 bg-white/50">
+                        <p className="text-sm font-medium">No phases in this project</p>
+                        <Button variant="link" onClick={() => handleOpenAddPhase(project.id)} className="text-blue-600">Add one now</Button>
+                      </div>
+                    ) : (
+                      <>
+                        {projectPhases.map(phase => (
+                          <div key={phase.id} className="flex items-center gap-4 flex-shrink-0">
+                            <PhaseCard
+                              phase={phase}
+                              onClick={() => { setSelectedPhaseId(phase.id); setPhaseDetailsOpen(true); }}
+                              onNameChange={handlePhaseNameChange}
+                            />
+                            <ChevronRight className="w-6 h-6 text-gray-300" />
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => handleOpenAddPhase(project.id)}
+                          className="min-w-[280px] h-[200px] flex-shrink-0 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
+                        >
+                          <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Add Phase</span>
+                        </button>
+                      </>
                     )}
                   </div>
-                ))}
-
-                {/* Add Phase Card */}
-                <button
-                  onClick={() => setAddPhaseDialogOpen(true)}
-                  className="min-w-[280px] h-[200px] flex-shrink-0 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-600 group"
-                >
-                  <Plus className="w-8 h-8" />
-                  <span className="font-medium">Add New Phase</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Empty State */}
-          {phases.length === 0 && (
-            <div className="text-center py-24 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4 ring-1 ring-white/20">
-                <FolderKanban className="w-8 h-8 text-white/40" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                No phases yet
-              </h3>
-              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
-                Get started by adding phases to track your project progress efficiently.
-              </p>
-              <Button onClick={() => setAddPhaseDialogOpen(true)} variant="secondary">
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Phase
-              </Button>
-            </div>
-          )}
-        </div>
-      </main >
+                </div>
+              </section>
+            );
+          })
+        )}
+      </main>
 
       {/* Footer */}
-      <footer className="max-w-7xl mx-auto px-6 py-6 text-center text-xs text-blue-200/40">
-        <p>Project Tracker v1.0.5 • Deployed {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</p>
+      <footer className="relative z-10 max-w-7xl mx-auto px-6 py-8 text-center border-t border-gray-200 mt-12 mb-8">
+        <p className="text-xs text-gray-400">Project Tracker v2.1 • Deployed {new Date().toLocaleDateString()}</p>
       </footer>
 
       {/* Dialogs */}
-      <AddProjectDialog
-        open={addProjectDialogOpen}
-        onClose={() => setAddProjectDialogOpen(false)
-        }
-        onAdd={handleAddProject}
-      />
-
-      <AddPhaseDialog
-        open={addPhaseDialogOpen}
-        onClose={() => setAddPhaseDialogOpen(false)}
-        onAdd={handleAddPhase}
-      />
-
+      <AddProjectDialog open={addProjectDialogOpen} onClose={() => setAddProjectDialogOpen(false)} onAdd={handleAddProject} />
+      <AddPhaseDialog open={addPhaseDialogOpen} onClose={() => setAddPhaseDialogOpen(false)} onAdd={handleAddPhase} />
       <PhaseDetails
         open={phaseDetailsOpen}
         onClose={() => setPhaseDetailsOpen(false)}
@@ -424,6 +322,6 @@ export default function App() {
         onAddTask={handleAddTask}
         onDeletePhase={handleDeletePhase}
       />
-    </div >
+    </div>
   );
 }

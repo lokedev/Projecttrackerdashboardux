@@ -37,8 +37,20 @@ export const api = {
         return data;
     },
 
+    updateProject: async (id: string, name: string) => {
+        const { data, error } = await supabase
+            .from('projects')
+            .update({ name })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
     getPhases: async () => {
-        // Join phases and tasks
+        // Fetch all phases with their tasks
         const { data: phases, error: phasesError } = await supabase
             .from('phases')
             .select(`
@@ -49,14 +61,14 @@ export const api = {
 
         if (phasesError) throw phasesError;
 
-        // Transform to match frontend expected structure (calculate usage metrics if needed)
+        // Transform to match frontend expected structure
         return phases.map(phase => {
             const tasks = phase.tasks || [];
             const metrics = calculatePhaseMetrics(tasks);
             return {
                 ...phase,
-                ...metrics, // ensure metrics are fresh
-                tasks: tasks.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                ...metrics,
+                tasks: tasks.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
             };
         });
     },

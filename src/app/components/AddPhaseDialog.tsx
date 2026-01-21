@@ -7,6 +7,8 @@ import {
 } from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
+// No changes needed to dialog component itself, it returns a string name.
+// Logic change will be in App.tsx to pass the relevant project_id when the dialog submits.
 import { Label } from "@/app/components/ui/label";
 import { useState } from "react";
 
