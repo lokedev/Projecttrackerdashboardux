@@ -214,6 +214,22 @@ export const api = {
         return phase;
     },
 
+    deleteTask: async (id: string) => {
+        // Manually delete subtasks first to ensure cleanup (in case DB cascade is missing)
+        const { error: subError } = await supabase
+            .from('subtasks')
+            .delete()
+            .eq('task_id', id);
+
+        if (subError) console.error("Error deleting subtasks:", subError);
+
+        // Then delete the task
+        const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    },
     deletePhase: async (id: string) => {
         const { error } = await supabase.from('phases').delete().eq('id', id);
         if (error) throw error;
