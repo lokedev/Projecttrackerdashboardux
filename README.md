@@ -26,6 +26,15 @@ A modern, clean web dashboard for tracking project phases and tasks. Built with 
 ### Prerequisites
 
 - Node.js 18+ and npm/pnpm/yarn
+- A Supabase Project (Database)
+
+### Database Setup
+
+1. Go to your **Supabase Dashboard** -> **SQL Editor**.
+2. Copy the contents of `src/migration.sql` (or `supabase_schema.sql` for a fresh start).
+3. Paste into the editor and click **Run**.
+4. Get your `SUPABASE_URL` and `SUPABASE_ANON_KEY` from **Project Settings** -> **API**.
+5. Add them to your `.env` file (or `src/lib/supabase.ts` if quick-prototyping).
 
 ### Installation
 

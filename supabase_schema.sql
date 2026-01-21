@@ -58,3 +58,16 @@ UNION ALL
 SELECT id, 'Create wireframes', true, NULL FROM ph2
 UNION ALL
 SELECT id, 'Design mockups', true, NULL FROM ph2;
+
+-- Create Subtasks Table
+CREATE TABLE subtasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  completed BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  position INTEGER
+);
+
+ALTER TABLE subtasks DISABLE ROW LEVEL SECURITY;
+
