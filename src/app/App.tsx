@@ -150,89 +150,85 @@ export default function App() {
     };
   };
 
+  // Force refresh helper
+  const refreshData = async () => {
+    const [projectsData, phasesData] = await Promise.all([
+      api.getProjects(),
+      api.getPhases(),
+    ]);
+    setProjects(projectsData);
+    setPhases(phasesData);
+  };
+
   const handleToggleTask = async (taskId: string) => {
     if (!selectedPhaseId) return;
 
-    // Find phase and task
+    // Optimistic Update
     const phase = phases.find(p => p.id === selectedPhaseId);
     if (!phase) return;
     const task = phase.tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Optimistic Update
     const newCompletedStatus = !task.completed;
-    const updatedTasks = phase.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedStatus } : t);
-
-    // Update local state immediately
+    // Local update for snapiness
     setPhases(prev => prev.map(p => {
       if (p.id === selectedPhaseId) {
+        const updatedTasks = p.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedStatus } : t);
         const metrics = calculateMetrics(updatedTasks);
         return { ...p, tasks: updatedTasks, ...metrics };
       }
       return p;
     }));
 
-    // API Call
     try {
       await api.updateTask(taskId, { completed: newCompletedStatus });
-      // Also update the phase progress in backend since it changed
-      const metrics = calculateMetrics(updatedTasks);
-      await api.updatePhase(selectedPhaseId, {
-        progress: metrics.progress,
-        status: metrics.status
-        // We don't send tasks here anymore!
-      });
+      // We do NOT wait for full refresh on toggle to keep it fast, 
+      // but we assume success. If it fails, the next reload fixes it.
+      // We SHOULD update the phase status though.
+      const updatedPhase = phases.find(p => p.id === selectedPhaseId);
+      if (updatedPhase) {
+        // Recalc metrics based on the change
+        const updatedTasks = updatedPhase.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedStatus } : t);
+        const metrics = calculateMetrics(updatedTasks);
+        await api.updatePhase(selectedPhaseId, {
+          progress: metrics.progress,
+          status: metrics.status
+        });
+      }
     } catch (e) {
       console.error("Failed to toggle task:", e);
-      // Could revert here if needed
+      alert("Failed to save task update. Please check your connection.");
+      refreshData(); // Revert on error
     }
   };
 
   const handleAddTask = async (name: string, due?: string) => {
     if (!selectedPhaseId) return;
 
-    const tempId = `temp-${Date.now()}`;
-    const newTask: Task = { id: tempId, name, completed: false, dueDate: due };
-
-    // Optimistic Update
-    setPhases(prev => prev.map(p => {
-      if (p.id === selectedPhaseId) {
-        const newTasks = [...(p.tasks || []), newTask];
-        const metrics = calculateMetrics(newTasks);
-        return { ...p, tasks: newTasks, ...metrics };
-      }
-      return p;
-    }));
-
     try {
-      const createdTask = await api.createTask(selectedPhaseId, name, due);
-
-      // Replace temp ID with real ID
-      setPhases(prev => prev.map(p => {
-        if (p.id === selectedPhaseId) {
-          const newTasks = p.tasks.map(t => t.id === tempId ? { ...t, id: createdTask.id } : t);
-          // Recalculate metrics just in case, though they shouldn't change
-          const metrics = calculateMetrics(newTasks);
-          // Sync phase progress to backend
-          api.updatePhase(selectedPhaseId, {
-            progress: metrics.progress,
-            status: metrics.status
-          });
-          return { ...p, tasks: newTasks, ...metrics };
-        }
-        return p;
-      }));
+      // Create in backend FIRST to ensure data integrity
+      await api.createTask(selectedPhaseId, name, due);
+      // Then refresh everything to get the fresh ID and state
+      await refreshData();
     } catch (e) {
       console.error("Failed to create task:", e);
+      alert("Failed to create task. Please try again.");
     }
   };
 
   const handleDeletePhase = async () => {
     if (!selectedPhaseId) return;
     const id = selectedPhaseId;
-    setPhases(prev => prev.filter(p => p.id !== id));
-    setSelectedPhaseId(null);
-    await api.deletePhase(id);
+    if (!confirm("Delete this phase?")) return;
+
+    try {
+      await api.deletePhase(id);
+      setSelectedPhaseId(null);
+      await refreshData();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete phase");
+    }
   };
 
   const selectedPhase = phases.find(p => p.id === selectedPhaseId) || null;
@@ -244,6 +240,9 @@ export default function App() {
     const totalProgress = projectPhases.reduce((acc, p) => acc + p.progress, 0);
     return Math.round(totalProgress / projectPhases.length);
   };
+
+  // @ts-ignore
+  const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toLocaleString();
 
   return (
     <div className="min-h-screen text-slate-900 bg-[#f4f4f5] relative font-sans">
@@ -384,9 +383,23 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 max-w-7xl mx-auto px-6 py-8 text-center border-t border-gray-200 mt-12 mb-8">
-        <p className="text-xs text-gray-400">Deployed: {new Date().toLocaleString()}</p>
+      {/* Footer with Image */}
+      <footer className="relative w-full mt-24">
+        {/* Background Image Container */}
+        <div className="w-full h-[400px] md:h-[500px] relative overflow-hidden">
+          <div
+            className="absolute inset-0 bg-contain bg-bottom bg-no-repeat opacity-90"
+            style={{ backgroundImage: `url('/bg-footer.jpg')` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-[#f4f4f5]" />
+        </div>
+
+        {/* Text Content */}
+        <div className="absolute bottom-4 left-0 right-0 text-center">
+          <p className="text-xs text-gray-500 font-medium bg-white/80 py-1 px-3 rounded-full inline-block backdrop-blur-sm shadow-sm">
+            Deployed: {buildTime}
+          </p>
+        </div>
       </footer>
 
       {/* Dialogs */}
