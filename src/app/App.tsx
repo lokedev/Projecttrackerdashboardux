@@ -98,13 +98,15 @@ export default function App() {
         name: projectName
       });
       setProjects([...projects, newProject]);
-      setCurrentProjectId(newProject.id);
+      if (currentProjectId === "1") setCurrentProjectId(newProject.id);
     } catch (e) {
       console.error(e);
     }
   };
 
   const handleAddPhase = async (phaseName: string) => {
+    // Optimistic UI update
+    const tempId = `temp-${Date.now()}`;
     const newPhase = {
       name: phaseName,
       progress: 0,
@@ -113,10 +115,18 @@ export default function App() {
       completedTaskCount: 0,
       tasks: [],
     };
+
+    setPhases([...phases, { ...newPhase, id: tempId } as any]);
+
     try {
       const savedPhase = await api.createPhase(newPhase);
-      setPhases([...phases, savedPhase]);
-    } catch (e) { console.error(e); }
+      // Replace temp phase with real one
+      setPhases(prev => prev.map(p => p.id === tempId ? savedPhase : p));
+    } catch (e) {
+      console.error(e);
+      // Revert on error
+      setPhases(prev => prev.filter(p => p.id !== tempId));
+    }
   };
 
   const handlePhaseNameChange = async (phaseId: string, newName: string) => {
@@ -177,29 +187,34 @@ export default function App() {
     const phase = phases.find(p => p.id === selectedPhaseId);
     if (!phase) return;
 
+    const tempTaskId = `temp-task-${Date.now()}`;
     const newTask: Task = {
-      id: `task-${Date.now()}`,
+      id: tempTaskId,
       name: taskName,
       completed: false,
-      dueDate,
+      dueDate, // Pass through, API service handles casing mapping if needed
     };
 
+    // UI Update - add task locally first
     const updatedTasks = [...phase.tasks, newTask];
     const metrics = calculatePhaseMetrics(updatedTasks);
+    // ... update logic common to toggle
 
     const updatedPhase = {
       ...phase,
       tasks: updatedTasks,
-      progress: metrics.progress,
-      status: metrics.status,
-      taskCount: metrics.totalTasks,
-      completedTaskCount: metrics.completedTasks
+      ...metrics
     };
 
     setPhases((prev) => prev.map(p => p.id === selectedPhaseId ? updatedPhase : p));
 
     try {
+      // Sync entire phase state including new task
       await api.updatePhase(selectedPhaseId, updatedPhase);
+      // Ideally we should reload the phase to get the real Task ID back
+      // But for plain MVP, simply reloading payload works or accepting eventual consistency
+      const freshPhases = await api.getPhases();
+      setPhases(freshPhases);
     } catch (e) { console.error(e); }
   };
 

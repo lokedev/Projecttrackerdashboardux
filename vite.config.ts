@@ -8,14 +8,6 @@ export default defineConfig({
     // Tailwind is not being actively used – do not remove them
     react(),
   ],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-    },
-  },
   resolve: {
     alias: {
       // Alias @ to the src directory
