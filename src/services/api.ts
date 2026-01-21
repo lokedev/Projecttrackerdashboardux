@@ -124,12 +124,15 @@ export const api = {
     },
 
     getPhases: async () => {
-        // Fetch all phases with their tasks
+        // Fetch all phases with their tasks and subtasks
         const { data: phases, error: phasesError } = await supabase
             .from('phases')
             .select(`
         *,
-        tasks (*)
+        tasks (
+          *,
+          subtasks (*)
+        )
       `)
             .order('created_at', { ascending: true });
 
@@ -142,7 +145,16 @@ export const api = {
             return {
                 ...phase,
                 ...metrics,
-                tasks: tasks.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                // Sort tasks by position, fall back to created_at
+                tasks: tasks.sort((a: any, b: any) => {
+                    const posA = a.position ?? 9999;
+                    const posB = b.position ?? 9999;
+                    return posA - posB || new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                }).map((t: any) => ({
+                    ...t,
+                    // Sort subtasks by position or creation
+                    subtasks: t.subtasks?.sort((sa: any, sb: any) => (sa.position || 0) - (sb.position || 0)) || []
+                }))
             };
         });
     },

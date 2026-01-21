@@ -222,9 +222,19 @@ export default function App() {
       await api.createTask(selectedPhaseId, name, due);
       // Then refresh everything to get the fresh ID and state
       await refreshData();
+      await api.updateTask(taskId, { name: newName });
+
+      // Optimistic local update
+      setPhases(prev => prev.map(p => {
+        if (p.id === selectedPhaseId) {
+          const newTasks = p.tasks.map(t => t.id === taskId ? { ...t, name: newName } : t);
+          return { ...p, tasks: newTasks };
+        }
+        return p;
+      }));
     } catch (e) {
-      console.error("Failed to create task:", e);
-      alert("Failed to create task. Please try again.");
+      console.error("Failed to edit task:", e);
+      refreshData();
     }
   };
 
@@ -242,7 +252,7 @@ export default function App() {
         return p;
       }));
     } catch (e) {
-      console.error("Failed to edit task:", e);
+      console.error(e);
       refreshData();
     }
   };
@@ -490,7 +500,7 @@ export default function App() {
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 w-full px-8 py-10 space-y-12 bg-white/80 backdrop-blur-sm min-h-screen mb-[600px]">
+        <main className="relative z-20 w-full px-8 py-10 space-y-12 bg-white/80 backdrop-blur-sm min-h-screen mb-[600px]">
           {
             projects.length === 0 ? (
               <div className="text-center py-32 opacity-50">
@@ -608,25 +618,25 @@ export default function App() {
               })
             )
           }
-        </main >
+        </main>
 
         {/* Footer with Image (Fixed Reveal Effect) */}
-        < footer className="fixed bottom-0 left-0 w-full h-[600px] z-0" >
+        <footer className="fixed bottom-0 left-0 w-full h-[600px] z-1">
           {/* Background Image Container */}
-          < div className="w-full h-full relative overflow-hidden" >
+          <div className="w-full h-full relative overflow-hidden">
             <div
               className="absolute inset-0 bg-cover bg-bottom bg-no-repeat"
               style={{ backgroundImage: `url('/bg-footer.jpg')` }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-          </div >
+          </div>
 
           {/* Text Content */}
-          < div className="absolute bottom-6 left-0 right-0 text-center" >
+          <div className="absolute bottom-6 left-0 right-0 text-center">
             <p className="text-xs text-white/90 font-medium bg-black/40 py-1.5 px-4 rounded-full inline-block backdrop-blur-md shadow-lg border border-white/10">
               Deployed: {buildTime} (EST)
             </p>
-          </div >
+          </div>
         </footer >
       </DndContext >
 
