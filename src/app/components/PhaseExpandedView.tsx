@@ -72,9 +72,6 @@ export function PhaseExpandedView({
 
     const statusInfo = statusConfig[phase.status] || statusConfig["not-started"];
 
-    // map phases to simple format for task item
-    const simplifiedPhases = projectPhases.map(p => ({ id: p.id, name: p.name }));
-
     return (
         <div ref={viewRef} className="w-full mt-6 mb-8 border border-blue-200 rounded-xl bg-white shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Header */}
@@ -135,11 +132,9 @@ export function PhaseExpandedView({
                                     <TaskItem
                                         key={task.id}
                                         task={{ ...task, phase_id: phase.id }} // Ensure phase_id is passed
-                                        phases={simplifiedPhases}
                                         onToggle={onToggleTask}
                                         onEdit={onEditTask}
                                         onDelete={onDeleteTask}
-                                        onMove={onMoveTask}
                                         onAddSubtask={onAddSubtask}
                                         onToggleSubtask={(sid) => onToggleSubtask(sid, task.id)}
                                         onDeleteSubtask={(sid) => onDeleteSubtask(sid, task.id)}

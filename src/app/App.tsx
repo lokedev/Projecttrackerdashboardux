@@ -219,21 +219,11 @@ export default function App() {
 
     try {
       // Create in backend FIRST to ensure data integrity
-      await api.createTask(selectedPhaseId, name, due);
+      await api.createTask(selectedPhaseId, name);
       // Then refresh everything to get the fresh ID and state
       await refreshData();
-      await api.updateTask(taskId, { name: newName });
-
-      // Optimistic local update
-      setPhases(prev => prev.map(p => {
-        if (p.id === selectedPhaseId) {
-          const newTasks = p.tasks.map(t => t.id === taskId ? { ...t, name: newName } : t);
-          return { ...p, tasks: newTasks };
-        }
-        return p;
-      }));
     } catch (e) {
-      console.error("Failed to edit task:", e);
+      console.error("Failed to add task:", e);
       refreshData();
     }
   };

@@ -73,6 +73,16 @@ export const api = {
             .select()
             .single();
         if (error) throw error;
+    },
+
+    async updateTask(id: string, updates: any) {
+        const { data, error } = await supabase
+            .from('tasks')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
         return data;
     },
 
