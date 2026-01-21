@@ -1,9 +1,11 @@
 import { Checkbox } from "@/app/components/ui/checkbox";
-import { Calendar, Pencil, Trash2, ArrowRightLeft, Check, X } from "lucide-react";
+import { Calendar, Pencil, Trash2, ArrowRightLeft, Check, X, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export interface Task {
   id: string;
@@ -11,6 +13,7 @@ export interface Task {
   completed: boolean;
   dueDate?: string;
   phase_id?: string;
+  position?: number;
 }
 
 interface TaskItemProps {
@@ -26,6 +29,21 @@ export function TaskItem({ task, phases, onToggle, onEdit, onDelete, onMove }: T
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(task.name);
   const [movePopoverOpen, setMovePopoverOpen] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const startEdit = () => {
     setEditedName(task.name);
@@ -45,7 +63,16 @@ export function TaskItem({ task, phases, onToggle, onEdit, onDelete, onMove }: T
   };
 
   return (
-    <div className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors group border border-transparent hover:border-gray-100">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-3 py-2 px-3 rounded-lg transition-colors group border border-transparent hover:border-gray-100 ${isDragging ? 'bg-blue-50 border-blue-200 z-50' : 'bg-white hover:bg-gray-50'}`}
+    >
+      {/* Drag Handle */}
+      <div {...attributes} {...listeners} className="mt-1.5 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500">
+        <GripVertical className="w-4 h-4" />
+      </div>
+
       <Checkbox
         id={task.id}
         checked={task.completed}
@@ -85,6 +112,7 @@ export function TaskItem({ task, phases, onToggle, onEdit, onDelete, onMove }: T
               <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
                 <Calendar className="w-3 h-3" />
                 <span>{task.dueDate}</span>
+                {task.position !== undefined && <span className="text-[10px] text-gray-300">#{task.position}</span>}
               </div>
             )}
           </>

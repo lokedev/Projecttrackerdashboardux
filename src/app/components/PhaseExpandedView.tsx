@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { Phase } from "@/app/components/PhaseCard";
 import { Badge } from "@/app/components/ui/badge";
 import { Progress } from "@/app/components/ui/progress";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 interface PhaseExpandedViewProps {
     phase: Phase;
@@ -118,23 +119,25 @@ export function PhaseExpandedView({
                     </div>
 
                     <div className="grid gap-2">
-                        {tasks.length === 0 ? (
-                            <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg bg-gray-50/50">
-                                <p className="text-sm text-gray-500">No tasks defined yet.</p>
-                            </div>
-                        ) : (
-                            tasks.map((task) => (
-                                <TaskItem
-                                    key={task.id}
-                                    task={{ ...task, phase_id: phase.id }} // Ensure phase_id is passed
-                                    phases={simplifiedPhases}
-                                    onToggle={onToggleTask}
-                                    onEdit={onEditTask}
-                                    onDelete={onDeleteTask}
-                                    onMove={onMoveTask}
-                                />
-                            ))
-                        )}
+                        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                            {tasks.length === 0 ? (
+                                <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg bg-gray-50/50">
+                                    <p className="text-sm text-gray-500">No tasks defined yet.</p>
+                                </div>
+                            ) : (
+                                tasks.map((task) => (
+                                    <TaskItem
+                                        key={task.id}
+                                        task={{ ...task, phase_id: phase.id }} // Ensure phase_id is passed
+                                        phases={simplifiedPhases}
+                                        onToggle={onToggleTask}
+                                        onEdit={onEditTask}
+                                        onDelete={onDeleteTask}
+                                        onMove={onMoveTask}
+                                    />
+                                ))
+                            )}
+                        </SortableContext>
                     </div>
 
                     {/* Quick Add Task */}
