@@ -615,8 +615,8 @@ export default function App() {
           {/* Background Image Container */}
           <div className="w-full h-full relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url('/bg-footer.jpg')` }}
+              className="absolute inset-0 bg-no-repeat"
+              style={{ backgroundImage: `url('/bg-footer.jpg')`, backgroundSize: '100% 100%' }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
           </div>
