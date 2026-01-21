@@ -244,95 +244,96 @@ export default function App() {
                 <FolderKanban className="w-6 h-6 text-white" />
               </div>
               <div>
-                {currentProject?.name || "RBH tracker"}
-              </h1>
-              <p className="text-sm text-gray-500">
-                Track your project phases and tasks
-              </p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {currentProject?.name || "RBH tracker"}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Track your project phases and tasks
+                </p>
+              </div>
             </div>
-          </div>
-          <Button onClick={() => setAddProjectDialogOpen(true)} size="lg">
-            <Plus className="w-5 h-5 mr-2" />
-            Add Project
-          </Button>
-        </div>
-    </div>
-      </header >
-
-    {/* Main Content */ }
-    < main className = "max-w-7xl mx-auto px-6 py-8" >
-      <div className="space-y-6">
-        {/* Phases Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Project Phases
-            </h2>
-            <Button
-              variant="outline"
-              onClick={() => setAddPhaseDialogOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Phase
+            <Button onClick={() => setAddProjectDialogOpen(true)} size="lg">
+              <Plus className="w-5 h-5 mr-2" />
+              Add Project
             </Button>
           </div>
+        </div>
+      </header>
 
-          {/* Phase Flow */}
-          <div className="relative">
-            <div className="flex items-center gap-4 overflow-x-auto pb-4 group">
-              {phases.map((phase, index) => (
-                <div key={phase.id} className="flex items-center gap-4 group">
-                  <PhaseCard
-                    phase={phase}
-                    onClick={() => handlePhaseClick(phase.id)}
-                    onNameChange={handlePhaseNameChange}
-                  />
-                  {index < phases.length - 1 && (
-                    <ChevronRight className="w-6 h-6 text-gray-300 flex-shrink-0" />
-                  )}
-                </div>
-              ))}
-
-              {/* Add Phase Card */}
-              <button
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="space-y-6">
+          {/* Phases Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Project Phases
+              </h2>
+              <Button
+                variant="outline"
                 onClick={() => setAddPhaseDialogOpen(true)}
-                className="min-w-[280px] h-[200px] flex-shrink-0 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-600 group"
               >
-                <Plus className="w-8 h-8" />
-                <span className="font-medium">Add New Phase</span>
-              </button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Phase
+              </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Empty State */}
-        {phases.length === 0 && (
-          <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-              <FolderKanban className="w-8 h-8 text-gray-400" />
+            {/* Phase Flow */}
+            <div className="relative">
+              <div className="flex items-center gap-4 overflow-x-auto pb-4 group">
+                {phases.map((phase, index) => (
+                  <div key={phase.id} className="flex items-center gap-4 group">
+                    <PhaseCard
+                      phase={phase}
+                      onClick={() => handlePhaseClick(phase.id)}
+                      onNameChange={handlePhaseNameChange}
+                    />
+                    {index < phases.length - 1 && (
+                      <ChevronRight className="w-6 h-6 text-gray-300 flex-shrink-0" />
+                    )}
+                  </div>
+                ))}
+
+                {/* Add Phase Card */}
+                <button
+                  onClick={() => setAddPhaseDialogOpen(true)}
+                  className="min-w-[280px] h-[200px] flex-shrink-0 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-600 group"
+                >
+                  <Plus className="w-8 h-8" />
+                  <span className="font-medium">Add New Phase</span>
+                </button>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No phases yet
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Get started by adding your first project phase
-            </p>
-            <Button onClick={() => setAddPhaseDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Phase
-            </Button>
           </div>
-        )}
-      </div>
+
+          {/* Empty State */}
+          {phases.length === 0 && (
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                <FolderKanban className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No phases yet
+              </h3>
+              <p className="text-gray-500 mb-6">
+                Get started by adding your first project phase
+              </p>
+              <Button onClick={() => setAddPhaseDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Phase
+              </Button>
+            </div>
+          )}
+        </div>
       </main >
 
-    {/* Dialogs */ }
-    < AddProjectDialog
-  open = { addProjectDialogOpen }
-  onClose = {() => setAddProjectDialogOpen(false)
-}
-onAdd = { handleAddProject }
-  />
+      {/* Dialogs */}
+      < AddProjectDialog
+        open={addProjectDialogOpen}
+        onClose={() => setAddProjectDialogOpen(false)
+        }
+        onAdd={handleAddProject}
+      />
 
       <AddPhaseDialog
         open={addPhaseDialogOpen}
