@@ -49,6 +49,11 @@ export const api = {
         return data;
     },
 
+    deleteProject: async (id: string) => {
+        const { error } = await supabase.from('projects').delete().eq('id', id);
+        if (error) throw error;
+    },
+
     getPhases: async () => {
         // Fetch all phases with their tasks
         const { data: phases, error: phasesError } = await supabase

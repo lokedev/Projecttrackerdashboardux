@@ -8,7 +8,7 @@ import { Task } from "@/app/components/TaskItem";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Progress } from "@/app/components/ui/progress";
-import { Plus, ChevronRight, FolderKanban, Pencil, Check, X, Building2, Trash2 } from "lucide-react";
+import { Plus, ChevronRight, FolderKanban, Pencil, Check, X, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Project {
@@ -85,20 +85,6 @@ export default function App() {
   const startEditingProject = (project: Project) => {
     setEditingProjectId(project.id);
     setEditProjectName(project.name);
-  };
-
-  const handleDeleteProject = async (projectId: string) => {
-    if (!confirm("Are you sure you want to delete this project? All phases and tasks will be permanently removed.")) return;
-
-    // Optimistic Update
-    setProjects(prev => prev.filter(p => p.id !== projectId));
-
-    try {
-      await api.deleteProject(projectId);
-    } catch (e) {
-      console.error("Failed to delete project:", e);
-      // Ideally revert state here if strict, but for MVP simpler to just log
-    }
   };
 
   const handleOpenAddPhase = (projectId: string) => {
@@ -207,7 +193,7 @@ export default function App() {
       />
 
       {/* Header */}
-      <header className="relative z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
+      <header className="relative z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-black rounded-lg shadow-sm">
@@ -261,11 +247,8 @@ export default function App() {
                       ) : (
                         <>
                           <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{project.name}</h2>
-                          <button onClick={() => startEditingProject(project)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600" title="Rename Project">
+                          <button onClick={() => startEditingProject(project)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600">
                             <Pencil className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDeleteProject(project.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500" title="Delete Project">
-                            <Trash2 className="w-4 h-4" />
                           </button>
                         </>
                       )}
