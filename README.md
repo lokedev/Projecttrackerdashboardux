@@ -31,10 +31,11 @@ A modern, clean web dashboard for tracking project phases and tasks. Built with 
 ### Database Setup
 
 1. Go to your **Supabase Dashboard** -> **SQL Editor**.
-2. Copy the contents of `src/migration.sql` (or `supabase_schema.sql` for a fresh start).
-3. Paste into the editor and click **Run**.
+2. Run the migration for subtasks if you haven't (from `src/migration.sql`).
+3. **CRITICAL**: Run `src/migration_tasks_position.sql` to enable Drag & Drop ordering.
+   - Without this, the app will crash on load.
 4. Get your `SUPABASE_URL` and `SUPABASE_ANON_KEY` from **Project Settings** -> **API**.
-5. Add them to your `.env` file (or `src/lib/supabase.ts` if quick-prototyping).
+5. Add them to your `.env` file.
 
 ### Installation
 

@@ -459,7 +459,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f4f5] text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 relative">
+    <div className="min-h-screen text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 relative">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
