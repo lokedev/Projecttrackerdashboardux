@@ -134,6 +134,9 @@ export function PhaseExpandedView({
                                         onEdit={onEditTask}
                                         onDelete={onDeleteTask}
                                         onMove={onMoveTask}
+                                        onAddSubtask={onAddSubtask}
+                                        onToggleSubtask={(sid) => onToggleSubtask(sid, task.id)}
+                                        onDeleteSubtask={(sid) => onDeleteSubtask(sid, task.id)}
                                     />
                                 ))
                             )}

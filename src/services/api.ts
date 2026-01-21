@@ -37,6 +37,75 @@ export const api = {
         return data;
     },
 
+    async getTasks() {
+        // Fetch tasks with their subtasks, ordered by position
+        const { data: tasks, error } = await supabase
+            .from('tasks')
+            .select(`
+        *,
+        subtasks (
+          id,
+          name,
+          completed,
+          position
+        )
+      `)
+            .order('position', { ascending: true });
+
+        if (error) throw error;
+
+        // Sort subtasks by position (client-side sort to be safe/easy if distinct order needed)
+        // or we can try to order in the query modifier if Supabase supports it well for nested.
+        // .order('position', { foreignTable: 'subtasks', ascending: true }) 
+        // ^ This sometimes is tricky. Let's sort in JS.
+        const sortedTasks = tasks?.map(t => ({
+            ...t,
+            subtasks: t.subtasks?.sort((a: any, b: any) => (a.position || 0) - (b.position || 0)) || []
+        })) || [];
+
+        return sortedTasks;
+    },
+
+    async createTask(phase_id: string, name: string) {
+        const { data, error } = await supabase
+            .from('tasks')
+            .insert({ phase_id, name, completed: false, position: 9999 }) // Default to end
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    // Subtasks
+    async createSubtask(task_id: string, name: string) {
+        const { data, error } = await supabase
+            .from('subtasks')
+            .insert({ task_id, name, completed: false })
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    async updateSubtask(id: string, updates: any) {
+        const { data, error } = await supabase
+            .from('subtasks')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteSubtask(id: string) {
+        const { error } = await supabase
+            .from('subtasks')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    },
+
     updateProject: async (id: string, name: string) => {
         const { data, error } = await supabase
             .from('projects')
@@ -138,31 +207,5 @@ export const api = {
         if (error) throw error;
     },
 
-    createTask: async (phaseId: string, name: string, dueDate?: string) => {
-        const { data, error } = await supabase
-            .from('tasks')
-            .insert([{ phase_id: phaseId, name, due_date: dueDate, completed: false }])
-            .select()
-            .single();
 
-        if (error) throw error;
-        return data;
-    },
-
-    updateTask: async (taskId: string, updates: any) => {
-        const { data, error } = await supabase
-            .from('tasks')
-            .update(updates)
-            .eq('id', taskId)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
-    },
-
-    deleteTask: async (taskId: string) => {
-        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-        if (error) throw error;
-    }
 };

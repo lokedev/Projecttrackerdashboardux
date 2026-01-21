@@ -387,6 +387,77 @@ export default function App() {
     }
   };
 
+  // Subtask Handlers
+  const handleAddSubtask = async (taskId: string, name: string) => {
+    try {
+      const newSub = await api.createSubtask(taskId, name);
+
+      // Optimistic Update
+      setPhases(prev => prev.map(p => {
+        const taskIndex = p.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+          const updatedTasks = [...p.tasks];
+          const task = updatedTasks[taskIndex];
+          updatedTasks[taskIndex] = {
+            ...task,
+            subtasks: [...(task.subtasks || []), newSub]
+          };
+          return { ...p, tasks: updatedTasks };
+        }
+        return p;
+      }));
+    } catch (e) {
+      console.error("Failed to add subtask:", e);
+    }
+  };
+
+  const handleToggleSubtask = async (subtaskId: string, taskId: string) => {
+    let newStatus = false;
+
+    // Optimistic Update
+    setPhases(prev => prev.map(p => {
+      const taskIndex = p.tasks.findIndex(t => t.id === taskId);
+      if (taskIndex !== -1) {
+        const updatedTasks = [...p.tasks];
+        const task = updatedTasks[taskIndex];
+        const subIndex = task.subtasks?.findIndex(s => s.id === subtaskId);
+
+        if (subIndex !== undefined && subIndex !== -1 && task.subtasks) {
+          const updatedSubs = [...task.subtasks];
+          newStatus = !updatedSubs[subIndex].completed;
+          updatedSubs[subIndex] = { ...updatedSubs[subIndex], completed: newStatus };
+          updatedTasks[taskIndex] = { ...task, subtasks: updatedSubs };
+          return { ...p, tasks: updatedTasks };
+        }
+      }
+      return p;
+    }));
+
+    try {
+      await api.updateSubtask(subtaskId, { completed: newStatus });
+    } catch (e) { console.error(e); refreshData(); }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string, taskId: string) => {
+    // Optimistic
+    setPhases(prev => prev.map(p => {
+      const taskIndex = p.tasks.findIndex(t => t.id === taskId);
+      if (taskIndex !== -1) {
+        const updatedTasks = [...p.tasks];
+        const task = updatedTasks[taskIndex];
+        if (task.subtasks) {
+          updatedTasks[taskIndex] = { ...task, subtasks: task.subtasks.filter(s => s.id !== subtaskId) };
+          return { ...p, tasks: updatedTasks };
+        }
+      }
+      return p;
+    }));
+
+    try {
+      await api.deleteSubtask(subtaskId);
+    } catch (e) { console.error(e); refreshData(); }
+  };
+
   return (
     <div className="min-h-screen bg-[#f4f4f5] text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900 relative">
       <DndContext
@@ -401,7 +472,7 @@ export default function App() {
         />
 
         {/* Header */}
-        <header className="relative z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0">
+        <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0">
           <div className="w-full px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-black rounded-lg shadow-sm">
@@ -419,7 +490,7 @@ export default function App() {
         </header>
 
         {/* Main Content */}
-        <main className="relative z-10 w-full px-8 py-10 space-y-12 bg-[#f4f4f5] min-h-screen mb-[600px]">
+        <main className="relative z-10 w-full px-8 py-10 space-y-12 bg-white/80 backdrop-blur-sm min-h-screen mb-[600px]">
           {
             projects.length === 0 ? (
               <div className="text-center py-32 opacity-50">
@@ -526,6 +597,9 @@ export default function App() {
                           onEditTask={handleEditTask}
                           onDeleteTask={handleDeleteTask}
                           onMoveTask={handleMoveTask}
+                          onAddSubtask={handleAddSubtask}
+                          onToggleSubtask={handleToggleSubtask}
+                          onDeleteSubtask={handleDeleteSubtask}
                         />
                       )}
                     </div>
