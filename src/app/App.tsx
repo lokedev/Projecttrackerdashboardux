@@ -6,7 +6,20 @@ import { AddProjectDialog } from "@/app/components/AddProjectDialog";
 import { AddPhaseDialog } from "@/app/components/AddPhaseDialog";
 import { Task } from "@/app/components/TaskItem";
 import { Button } from "@/app/components/ui/button";
-import { Plus, ChevronRight, FolderKanban } from "lucide-react";
+import { Plus, ChevronRight, FolderKanban, ChevronsUpDown, Check } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/app/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/app/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 interface Project {
   id: string;
@@ -55,6 +68,10 @@ export default function App() {
 
   // Get current project
   const currentProject = projects.find((p) => p.id === currentProjectId);
+  const [openProjectSelect, setOpenProjectSelect] = useState(false);
+
+  // Modern Gradient Background
+  const gradientBg = "bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-purple-900 to-slate-900";
 
   // Calculate phase progress and status
   const calculatePhaseMetrics = (tasks: Task[]) => {
@@ -98,7 +115,8 @@ export default function App() {
         name: projectName
       });
       setProjects([...projects, newProject]);
-      if (currentProjectId === "1") setCurrentProjectId(newProject.id);
+      setProjects([...projects, newProject]);
+      setCurrentProjectId(newProject.id); // Always switch to new project
     } catch (e) {
       console.error(e);
     }
@@ -234,27 +252,77 @@ export default function App() {
   const selectedPhase = phases.find((p) => p.id === selectedPhaseId) || null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className={`min-h-screen ${gradientBg} text-white`}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+      <header className="bg-white/10 backdrop-blur-md border-b border-white/10 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <FolderKanban className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20">
+                  <FolderKanban className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-white tracking-tight">
+                    Project Tracker
+                  </h1>
+                  <p className="text-xs text-blue-200/80 font-medium">
+                    Dashboard & Analytics
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {currentProject?.name || "RBH tracker"}
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Track your project phases and tasks
-                </p>
-              </div>
+
+              {/* Project Selector */}
+              <div className="h-8 w-px bg-white/10 mx-2" />
+
+              <Popover open={openProjectSelect} onOpenChange={setOpenProjectSelect}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openProjectSelect}
+                    className="w-[250px] justify-between bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white"
+                  >
+                    {currentProject?.name || "Select project..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[250px] p-0 bg-slate-900 border-slate-700">
+                  <Command>
+                    <CommandInput placeholder="Search project..." className="text-white" />
+                    <CommandEmpty>No project found.</CommandEmpty>
+                    <CommandGroup>
+                      {projects.map((project) => (
+                        <CommandItem
+                          key={project.id}
+                          value={project.name}
+                          onSelect={() => {
+                            setCurrentProjectId(project.id)
+                            setOpenProjectSelect(false)
+                          }}
+                          className="text-white aria-selected:bg-white/10"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              currentProjectId === project.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {project.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-            <Button onClick={() => setAddProjectDialogOpen(true)} size="lg">
+
+            <Button
+              onClick={() => setAddProjectDialogOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white border-0 shadow-lg shadow-blue-500/25"
+            >
               <Plus className="w-5 h-5 mr-2" />
-              Add Project
+              New Project
             </Button>
           </div>
         </div>
@@ -263,15 +331,16 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-6">
-          {/* Phases Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Project Phases
+              <h2 className="text-xl font-semibold text-white/90">
+                {currentProject ? `${currentProject.name} Phases` : 'Select a Project'}
               </h2>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => setAddPhaseDialogOpen(true)}
+                disabled={!currentProject}
+                className="bg-white/10 hover:bg-white/20 text-white border-0"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Phase
@@ -308,19 +377,19 @@ export default function App() {
 
           {/* Empty State */}
           {phases.length === 0 && (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                <FolderKanban className="w-8 h-8 text-gray-400" />
+            <div className="text-center py-24 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4 ring-1 ring-white/20">
+                <FolderKanban className="w-8 h-8 text-white/40" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-white mb-2">
                 No phases yet
               </h3>
-              <p className="text-gray-500 mb-6">
-                Get started by adding your first project phase
+              <p className="text-gray-400 mb-6 max-w-sm mx-auto">
+                Get started by adding phases to track your project progress efficiently.
               </p>
-              <Button onClick={() => setAddPhaseDialogOpen(true)}>
+              <Button onClick={() => setAddPhaseDialogOpen(true)} variant="secondary">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Phase
+                Add First Phase
               </Button>
             </div>
           )}
