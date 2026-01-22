@@ -21,7 +21,14 @@ import {
   DragEndEvent,
   DragOverlay
 } from '@dnd-kit/core';
-import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  SortableContext,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from "@dnd-kit/utilities";
 
 interface Project {
   id: string;
@@ -31,6 +38,37 @@ interface Project {
 interface PhaseWithTasks extends Phase {
   project_id?: string; // Add project_id to interface
   tasks: Task[];
+}
+
+// Draggable Phase Wrapper
+function DraggablePhase({ phase, onClick, onNameChange, isSelected }: { phase: Phase, onClick: () => void, onNameChange: (id: string, name: string) => void, isSelected: boolean }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: phase.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-4 flex-shrink-0">
+      <PhaseCard
+        phase={phase}
+        onClick={onClick}
+        onNameChange={onNameChange}
+        listeners={{ ...listeners, ...attributes }}
+      />
+      {!isDragging && <ChevronRight className="w-6 h-6 text-gray-300" />}
+    </div>
+  );
 }
 
 export default function App() {
@@ -359,6 +397,33 @@ export default function App() {
       return;
     }
 
+    // CHECK IF PHASE
+    // Simplified check: assume unique IDs across types or use logic.
+    // If we find the ID in phases array, it's a Phase Reorder.
+    const activePhaseIndex = phases.findIndex(p => p.id === active.id);
+    const overPhaseIndex = phases.findIndex(p => p.id === over.id);
+
+    if (activePhaseIndex !== -1 && overPhaseIndex !== -1) {
+      // Phase Reordering
+      const newPhases = arrayMove(phases, activePhaseIndex, overPhaseIndex);
+
+      // Update positions
+      const updatedPhases = newPhases.map((p, index) => ({ ...p, position: index }));
+      setPhases(updatedPhases);
+
+      // Persist (Batch update or loop)
+      // Since we don't have a batch endpoint, we can loop update.
+      // Ideally use a single RPC call. For now, loop async (fire and forget).
+      updatedPhases.forEach(async (p) => {
+        try {
+          await api.updatePhase(p.id, { position: p.position });
+        } catch (e) { console.error("Failed to update phase position", e) }
+      });
+      return;
+    }
+
+
+    // TASK REORDERING (Existing Logic)
     if (!selectedPhaseId) return;
 
     // Find the active task
@@ -378,12 +443,6 @@ export default function App() {
         }
         return p;
       }));
-
-      // Persist order (Optional: if we had a batch update endpoint)
-      // Since we don't have a reliable batch endpoint yet, we might skip API call or implement one.
-      // But for now, user feedback "tasks movable" is satisfied by UI. 
-      // We will TRY to update the position if API supports it, loop update?
-      // Let's assume for now we just want UI to work.
     }
   };
 
@@ -475,12 +534,11 @@ export default function App() {
         <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0">
           <div className="w-full px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-black rounded-lg shadow-sm">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
+              {/* Logo */}
+              <img src="/rbh-logo.png" alt="RBH Logo" className="h-10 w-auto object-contain" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Project Tracker</h1>
-                <p className="text-xs text-gray-500 font-medium">Dashboard</p>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">RBH builds</h1>
+                <p className="text-xs text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
               </div>
             </div>
             <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md">
@@ -556,34 +614,28 @@ export default function App() {
 
                     {/* Phases Horizontal Scroll */}
                     <div className="relative">
-                      <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide">
-                        {projectPhases.length === 0 ? (
-                          <div className="w-full py-12 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 bg-white/50">
-                            <p className="text-sm font-medium">No phases in this project</p>
-                            <Button variant="link" onClick={() => handleOpenAddPhase(project.id)} className="text-blue-600">Add one now</Button>
-                          </div>
-                        ) : (
-                          <>
-                            {projectPhases.map(phase => (
-                              <div key={phase.id} className="flex items-center gap-4 flex-shrink-0">
-                                <PhaseCard
-                                  phase={phase}
-                                  onClick={() => setSelectedPhaseId(selectedPhaseId === phase.id ? null : phase.id)} // Toggle selection
-                                  onNameChange={handlePhaseNameChange}
-                                />
-                                <ChevronRight className="w-6 h-6 text-gray-300" />
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => handleOpenAddPhase(project.id)}
-                              className="min-w-[280px] h-[200px] flex-shrink-0 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
-                            >
-                              <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                              <span className="font-medium">Add Phase</span>
-                            </button>
-                          </>
-                        )}
+                      <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide p-1"> {/* p-1 to allow shadow */}
+                        <SortableContext items={projectPhases.map(p => p.id)} strategy={horizontalListSortingStrategy}>
+                          {projectPhases.map(phase => (
+                            <DraggablePhase
+                              key={phase.id}
+                              phase={phase}
+                              onClick={() => setSelectedPhaseId(selectedPhaseId === phase.id ? null : phase.id)}
+                              onNameChange={handlePhaseNameChange}
+                              isSelected={selectedPhaseId === phase.id}
+                            />
+                          ))}
+                        </SortableContext>
+
+                        <button
+                          onClick={() => handleOpenAddPhase(project.id)}
+                          className="min-w-[200px] h-[140px] flex-shrink-0 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
+                        >
+                          <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
+                          <span className="font-medium">Add Phase</span>
+                        </button>
                       </div>
+
                       {/* Expanded Phase View - Inline (Netflix Style) */}
                       {isSelectedPhaseInThisProject && selectedPhase && (
                         <PhaseExpandedView
@@ -623,9 +675,14 @@ export default function App() {
 
           {/* Text Content */}
           <div className="absolute bottom-6 left-0 right-0 text-center">
-            <p className="text-xs text-white/90 font-medium bg-black/40 py-1.5 px-4 rounded-full inline-block backdrop-blur-md shadow-lg border border-white/10">
-              Deployed: {buildTime} (EST)
-            </p>
+            <div className="inline-flex flex-col items-center gap-1">
+              <p className="text-xs text-white/90 font-medium bg-black/40 py-1.5 px-4 rounded-full backdrop-blur-md shadow-lg border border-white/10">
+                Last updated: {buildTime} (EST)
+              </p>
+              <p className="text-xs text-white/80 font-medium tracking-wide">
+                lokedev · 💻
+              </p>
+            </div>
           </div>
         </footer >
       </DndContext >

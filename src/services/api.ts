@@ -149,7 +149,7 @@ export const api = {
         if (phasesError) throw phasesError;
 
         // Transform to match frontend expected structure
-        return phases.map(phase => {
+        return phases.sort((a, b) => (a.position || 0) - (b.position || 0) || new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(phase => {
             const tasks = phase.tasks || [];
             const metrics = calculatePhaseMetrics(tasks);
             return {
@@ -196,7 +196,7 @@ export const api = {
         // Update Phase metadata
         const { error: phaseError } = await supabase
             .from('phases')
-            .update({ name: updates.name, status, progress }) // Update calculated fields too for persistence
+            .update({ name: updates.name, status, progress, position: updates.position }) // Update calculated fields too for persistence
             .eq('id', id);
 
         if (phaseError) throw phaseError;

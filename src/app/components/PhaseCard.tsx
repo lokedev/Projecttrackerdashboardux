@@ -28,7 +28,7 @@ const statusConfig = {
   completed: { label: "Completed", className: "bg-green-100 text-green-700" },
 };
 
-export function PhaseCard({ phase, onClick, onNameChange }: PhaseCardProps) {
+export function PhaseCard({ phase, onClick, onNameChange, listeners }: PhaseCardProps & { listeners?: any }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(phase.name);
 
@@ -50,26 +50,40 @@ export function PhaseCard({ phase, onClick, onNameChange }: PhaseCardProps) {
 
   const statusInfo = statusConfig[phase.status];
 
+  // Progress Background Style
+  const progressStyle = {
+    background: `linear-gradient(to right, #eff6ff ${phase.progress}%, white ${phase.progress}%)`,
+    // Alternative: if you want a subtle fill:
+    // background: `linear-gradient(to right, rgba(59, 130, 246, 0.1) ${phase.progress}%, white ${phase.progress}%)`
+  };
+
   return (
     <Card
-      className="p-5 hover:shadow-lg transition-all cursor-pointer border border-gray-200 bg-white min-w-[280px] flex-shrink-0"
+      className="p-4 hover:shadow-md transition-all cursor-pointer border border-gray-200 min-w-[220px] max-w-[220px] flex-shrink-0 relative overflow-hidden group select-none"
+      style={progressStyle}
       onClick={(e) => {
         if (!isEditing) {
           onClick();
         }
       }}
+      {...listeners} // Apply drag start listeners to the card itself if undesired, usually handle should be separate but user asked to drag phases. 
+    // BETTER: Drag handle or whole card? Usually drag handle is safer for "Editable".
+    // Let's assume whole card dragging relies on listeners passed from parent, but we might conflict with click. 
+    // Actually, for dnd-kit sortable, we usually attach listeners to a handle or the root. 
+    // If we attach to root, we need to prevent drag on input.
     >
-      <div className="space-y-4">
-        {/* Phase Name */}
-        <div className="flex items-center justify-between gap-2">
+      <div className="space-y-3 relative z-10">
+        {/* Phase Name & Edit */}
+        <div className="flex items-start justify-between gap-2">
           {isEditing ? (
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-1 flex-1">
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
-                className="h-8 text-base"
+                onPointerDown={(e) => e.stopPropagation()} // Prevent drag start on input
+                className="h-7 text-sm px-1"
                 autoFocus
               />
               <button
@@ -79,12 +93,12 @@ export function PhaseCard({ phase, onClick, onNameChange }: PhaseCardProps) {
                 }}
                 className="p-1 hover:bg-gray-100 rounded"
               >
-                <Check className="w-4 h-4 text-green-600" />
+                <Check className="w-3 h-3 text-green-600" />
               </button>
             </div>
           ) : (
             <>
-              <h3 className="text-lg font-semibold text-gray-900 flex-1">
+              <h3 className="text-sm font-semibold text-gray-900 flex-1 leading-tight break-words">
                 {phase.name}
               </h3>
               <button
@@ -92,30 +106,26 @@ export function PhaseCard({ phase, onClick, onNameChange }: PhaseCardProps) {
                   e.stopPropagation();
                   setIsEditing(true);
                 }}
-                className="p-1.5 hover:bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                className="p-1 hover:bg-gray-100/50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <Pencil className="w-4 h-4 text-gray-500" />
+                <Pencil className="w-3 h-3 text-gray-400" />
               </button>
             </>
           )}
         </div>
 
-        {/* Status Badge */}
-        <Badge className={`${statusInfo.className} rounded-full px-3 py-0.5 text-xs`}>
-          {statusInfo.label}
-        </Badge>
+        {/* Status Badge & Metrics */}
+        <div className="flex items-center justify-between">
+          <Badge className={`${statusInfo.className} rounded-full px-2 py-0 text-[10px] uppercase tracking-wide border-0`}>
+            {statusInfo.label}
+          </Badge>
+          <span className="text-xs font-bold text-gray-600">
+            {phase.progress}%
+          </span>
+        </div>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <Progress value={phase.progress} className="h-2" />
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-2xl font-bold text-gray-900">
-              {phase.progress}%
-            </span>
-            <span className="text-gray-500">
-              {phase.completedTaskCount} / {phase.taskCount} tasks
-            </span>
-          </div>
+        <div className="text-[10px] text-gray-400 font-medium">
+          {phase.completedTaskCount} / {phase.taskCount} tasks
         </div>
       </div>
     </Card>
