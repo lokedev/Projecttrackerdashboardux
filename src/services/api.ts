@@ -1,18 +1,33 @@
 import { supabase } from '@/lib/supabase';
 
 // Helper to calculate tasks metrics
+// Helper to calculate tasks metrics (Granular: Subtasks count too)
 function calculatePhaseMetrics(tasks: any[]) {
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter((t) => t.completed).length;
-    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    let totalItems = 0;
+    let completedItems = 0;
+
+    tasks.forEach(task => {
+        // Count the Task itself
+        totalItems++;
+        if (task.completed) completedItems++;
+
+        // Count Subtasks if they exist
+        if (task.subtasks && task.subtasks.length > 0) {
+            totalItems += task.subtasks.length;
+            completedItems += task.subtasks.filter((st: any) => st.completed).length;
+        }
+    });
+
+    const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
     let status = "not-started";
-    if (completedTasks === totalTasks && totalTasks > 0) {
+    if (completedItems === totalItems && totalItems > 0) {
         status = "completed";
-    } else if (completedTasks > 0) {
+    } else if (completedItems > 0) {
         status = "in-progress";
     }
-    return { progress, status, completedTaskCount: completedTasks, taskCount: totalTasks };
+    return { progress, status, completedTaskCount: completedItems, taskCount: totalItems }; // Note: specific counts might be misinterpreted if UI expects TASK count only, but for progress bar it is fine.
+    // Actually, UI shows "X / Y tasks". If we return item count, it shows "15 / 20 tasks" (items). This is consistent with granular progress.
 }
 
 export const api = {

@@ -1,6 +1,7 @@
 
-import { api } from '@/services/api';
+import { supabase } from '@/lib/supabase';
 
+// Define Data Structure
 const SEED_DATA = [
     {
         name: "Discovery",
@@ -232,12 +233,17 @@ export async function resetAndSeedDatabase() {
 
     try {
         // 1. Delete Existing Projects
-        const projects = await api.getProjects();
-        console.log(`Found ${projects.length} existing projects. Deleting...`);
+        const { data: projects, error: fetchError } = await supabase.from('projects').select('id, name');
+        if (fetchError) throw fetchError;
 
-        for (const p of projects) {
-            await api.deleteProject(p.id);
-            console.log(`Deleted project: ${p.name}`);
+        console.log(`Found ${projects?.length || 0} existing projects. Deleting...`);
+
+        if (projects) {
+            for (const p of projects) {
+                const { error: deleteError } = await supabase.from('projects').delete().eq('id', p.id);
+                if (deleteError) throw deleteError;
+                console.log(`Deleted project: ${p.name}`);
+            }
         }
 
         // 2. Create Projects
@@ -245,8 +251,16 @@ export async function resetAndSeedDatabase() {
 
         for (const pName of projectNames) {
             console.log(`Creating project: ${pName}...`);
-            const project = await api.createProject({ name: pName });
-            if (!project || !project.id) throw new Error("Failed to create project");
+
+            const { data: project, error: projError } = await supabase
+                .from('projects')
+                .insert({ name: pName })
+                .select() // important to return data
+                .single();
+
+            if (projError) throw projError;
+            if (!project) throw new Error("Project created but no data returned");
+
             const projectId = project.id;
 
             // 3. Create Phases
@@ -254,35 +268,53 @@ export async function resetAndSeedDatabase() {
                 const phaseData = SEED_DATA[i];
                 console.log(`  Adding Phase: ${phaseData.name}`);
 
-                // Create Phase
-                const phase = await api.createPhase({
-                    project_id: projectId,
-                    name: phaseData.name,
-                    status: 'not-started',
-                    progress: 0,
-                    position: i, // Use index as position
-                    tasks: []
-                });
-                const phaseId = phase.id || (phase as any).data?.id; // Handle typical supabase response if wrapper varies
+                const { data: phase, error: phaseError } = await supabase
+                    .from('phases')
+                    .insert({
+                        project_id: projectId,
+                        name: phaseData.name,
+                        status: 'not-started',
+                        progress: 0,
+                        position: i
+                    })
+                    .select()
+                    .single();
 
-                if (!phaseId) {
-                    console.error("Phase creation failed (no ID)", phase);
-                    continue;
-                }
+                if (phaseError) throw phaseError;
+                const phaseId = phase.id;
 
                 // 4. Create Tasks
                 if (phaseData.tasks) {
                     for (let j = 0; j < phaseData.tasks.length; j++) {
                         const taskSource = phaseData.tasks[j];
 
-                        // Create Task
-                        // @ts-ignore
-                        const task = await api.createTask(phaseId, taskSource.name);
+                        const { data: task, error: taskError } = await supabase
+                            .from('tasks')
+                            .insert({
+                                phase_id: phaseId,
+                                name: taskSource.name,
+                                completed: false,
+                                position: j // Explicit position
+                            })
+                            .select()
+                            .single();
 
-                        if (task && task.id && taskSource.subtasks) {
+                        if (taskError) throw taskError;
+
+                        if (taskSource.subtasks && taskSource.subtasks.length > 0) {
                             // 5. Create Subtasks
-                            for (const subName of taskSource.subtasks) {
-                                await api.createSubtask(task.id, subName);
+                            for (let k = 0; k < taskSource.subtasks.length; k++) {
+                                const subName = taskSource.subtasks[k];
+                                const { error: subError } = await supabase
+                                    .from('subtasks')
+                                    .insert({
+                                        task_id: task.id,
+                                        name: subName,
+                                        completed: false,
+                                        position: k
+                                    });
+
+                                if (subError) throw subError;
                             }
                         }
                     }
@@ -291,12 +323,12 @@ export async function resetAndSeedDatabase() {
         }
 
         console.log("Seeding Complete!");
-        alert("Database Reset & Seeding Complete! The page will now reload.");
+        alert("Success! The page will now reload.");
         window.location.reload();
         return true;
-    } catch (e) {
+    } catch (e: any) {
         console.error("Seeding Failed:", e);
-        alert("Seeding Failed. Check console.");
+        alert(`Seeding Failed:\n${e.message || JSON.stringify(e)}\n\nCheck console for full stack.`);
         return false;
     }
 }
