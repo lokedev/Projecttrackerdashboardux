@@ -708,14 +708,6 @@ export default function App() {
                             />
                           ))}
                         </SortableContext>
-
-                        <button
-                          onClick={() => handleOpenAddPhase(project.id)}
-                          className="min-w-full h-[140px] border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
-                        >
-                          <Plus className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                          <span className="text-sm font-medium">Add Phase</span>
-                        </button>
                       </div>
 
                       {/* Expanded Phase View - Inline (Netflix Style) */}
