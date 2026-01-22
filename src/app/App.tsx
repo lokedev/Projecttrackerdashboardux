@@ -530,24 +530,24 @@ export default function App() {
           style={{ backgroundImage: sketchTexture }}
         />
 
-        {/* Header */}
+        {/* Header - Bigger size (20% bigger roughly) */}
         <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0">
-          <div className="w-full px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Logo */}
-              <img src="/rbh-logo.png" alt="RBH Logo" className="h-10 w-auto object-contain" />
+          <div className="w-full px-8 py-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Logo - Bigger */}
+              <img src="/rbh-logo.png" alt="RBH Logo" className="h-16 w-auto object-contain" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">RBH builds</h1>
-                <p className="text-xs text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">RBH builds</h1>
+                <p className="text-sm text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
               </div>
             </div>
-            <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md">
-              <Plus className="w-4 h-4 mr-2" /> New Project
+            <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md px-6 py-6 text-lg">
+              <Plus className="w-5 h-5 mr-2" /> New Project
             </Button>
           </div>
         </header>
 
-        {/* Main Content */}
+
         <main className="relative z-20 w-full px-8 py-10 space-y-12 bg-white/80 backdrop-blur-sm min-h-screen mb-[500px]">
           {
             projects.length === 0 ? (
@@ -674,12 +674,14 @@ export default function App() {
           </div>
 
           {/* Text Content */}
-          <div className="absolute bottom-6 left-0 right-0 text-center">
-            <div className="inline-flex flex-col items-center gap-1">
-              <p className="text-xs text-white/90 font-medium bg-black/40 py-1.5 px-4 rounded-full backdrop-blur-md shadow-lg border border-white/10">
+          <div className="absolute bottom-10 left-0 right-0 text-center">
+            <div className="inline-flex flex-col items-center gap-2">
+              {/* Last Updated Pill */}
+              <p className="text-xs font-semibold text-gray-900 bg-white/90 py-2 px-6 rounded-full shadow-xl border border-white/20 backdrop-blur-xl">
                 Last updated: {buildTime} (EST)
               </p>
-              <p className="text-xs text-white/80 font-medium tracking-wide">
+              {/* Credits - High Contrast */}
+              <p className="text-sm font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-wide bg-black/30 px-3 py-1 rounded-md backdrop-blur-sm">
                 lokedev · 💻
               </p>
             </div>

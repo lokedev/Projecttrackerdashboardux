@@ -128,6 +128,14 @@ export function PhaseCard({ phase, onClick, onNameChange, listeners }: PhaseCard
           {phase.completedTaskCount} / {phase.taskCount} tasks
         </div>
       </div>
+
+      {/* Bottom Progress Bar (10% height, dark color) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[10%] bg-gray-100">
+        <div
+          className="h-full bg-slate-800 transition-all duration-500 ease-out"
+          style={{ width: `${phase.progress}%` }}
+        />
+      </div>
     </Card>
   );
 }
