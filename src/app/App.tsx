@@ -383,7 +383,11 @@ export default function App() {
   const buildTime = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toLocaleString();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -535,7 +539,7 @@ export default function App() {
           <div className="w-full px-8 py-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {/* Logo - Tuned Size */}
-              <img src="/rbh-logo.png" alt="RBH Logo" className="h-12 w-auto object-contain" />
+              <img src="/rbh-logo.png" alt="RBH Logo" className="h-20 w-auto object-contain" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight leading-none">RBH builds</h1>
                 <p className="text-xs text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
