@@ -59,8 +59,7 @@ export function PhaseCard({ phase, onClick, onNameChange, listeners }: PhaseCard
 
   return (
     <Card
-      className="p-4 hover:shadow-md transition-all cursor-pointer border border-gray-200 min-w-[220px] max-w-[220px] flex-shrink-0 relative overflow-hidden group select-none"
-      style={progressStyle}
+      className="p-4 hover:shadow-md transition-all cursor-pointer border border-gray-200 min-w-[220px] max-w-[220px] flex-shrink-0 relative overflow-hidden group select-none bg-white"
       onClick={(e) => {
         if (!isEditing) {
           onClick();

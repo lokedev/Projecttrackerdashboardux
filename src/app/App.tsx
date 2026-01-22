@@ -533,12 +533,12 @@ export default function App() {
         {/* Header - Bigger size (20% bigger roughly) */}
         <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0">
           <div className="w-full px-8 py-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Logo - Bigger */}
-              <img src="/rbh-logo.png" alt="RBH Logo" className="h-16 w-auto object-contain" />
+            <div className="flex items-center gap-2">
+              {/* Logo - Tuned Size */}
+              <img src="/rbh-logo.png" alt="RBH Logo" className="h-12 w-auto object-contain" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">RBH builds</h1>
-                <p className="text-sm text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight leading-none">RBH builds</h1>
+                <p className="text-xs text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
               </div>
             </div>
             <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md px-6 py-6 text-lg">
@@ -629,10 +629,10 @@ export default function App() {
 
                         <button
                           onClick={() => handleOpenAddPhase(project.id)}
-                          className="min-w-[200px] h-[140px] flex-shrink-0 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
+                          className="min-w-[140px] h-[100px] flex-shrink-0 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
                         >
-                          <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
-                          <span className="font-medium">Add Phase</span>
+                          <Plus className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                          <span className="text-sm font-medium">Add Phase</span>
                         </button>
                       </div>
 
