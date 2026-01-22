@@ -742,7 +742,7 @@ export default function App() {
                                       isSelected={selectedPhaseId === phase.id}
                                     />
                                     {shouldRenderExpandedView && (
-                                      <div className="col-span-1 md:col-span-2 lg:col-span-4 w-full order-last">
+                                      <div className="col-span-1 md:col-span-2 lg:col-span-4 w-full">
                                         <PhaseExpandedView
                                           phase={selectedPhase}
                                           projectPhases={projectPhases}
