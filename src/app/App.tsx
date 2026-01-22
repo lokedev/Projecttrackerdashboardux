@@ -24,7 +24,7 @@ import {
 import {
   arrayMove,
   sortableKeyboardCoordinates,
-  horizontalListSortingStrategy,
+  rectSortingStrategy,
   SortableContext,
   useSortable
 } from '@dnd-kit/sortable';
@@ -624,9 +624,7 @@ export default function App() {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md px-6 py-6 text-lg">
-                <Plus className="w-5 h-5 mr-2" /> New Project
-              </Button>
+              {/* Button moved to bottom */}
             </div>
           </div>
         </header>
@@ -696,10 +694,10 @@ export default function App() {
                       </Button>
                     </div>
 
-                    {/* Phases Horizontal Scroll */}
+                    {/* Phases Grid (2 Lines = ~4 cols) */}
                     <div className="relative">
-                      <div className="flex items-center gap-4 overflow-x-auto pb-6 scrollbar-hide p-1"> {/* p-1 to allow shadow */}
-                        <SortableContext items={projectPhases.map(p => p.id)} strategy={horizontalListSortingStrategy}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-6">
+                        <SortableContext items={projectPhases.map(p => p.id)} strategy={rectSortingStrategy}>
                           {projectPhases.map(phase => (
                             <DraggablePhase
                               key={phase.id}
@@ -713,7 +711,7 @@ export default function App() {
 
                         <button
                           onClick={() => handleOpenAddPhase(project.id)}
-                          className="min-w-[140px] h-[100px] flex-shrink-0 border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
+                          className="min-w-full h-[140px] border-2 border-dashed border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-gray-600 group bg-white/50"
                         >
                           <Plus className="w-6 h-6 group-hover:scale-110 transition-transform" />
                           <span className="text-sm font-medium">Add Phase</span>
@@ -744,6 +742,17 @@ export default function App() {
               })
             )
           }
+
+
+          {/* New Project Button (Moved from Header) */}
+          <div className="flex justify-center pt-8 pb-4">
+            <Button
+              onClick={() => setAddProjectDialogOpen(true)}
+              className="bg-black hover:bg-gray-800 text-white shadow-xl px-8 py-8 text-xl rounded-2xl transition-all hover:scale-105"
+            >
+              <Plus className="w-6 h-6 mr-2" /> Start New Project
+            </Button>
+          </div>
         </main>
 
         {/* Footer with Image (Fixed Reveal Effect) */}
