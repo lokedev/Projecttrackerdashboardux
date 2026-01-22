@@ -41,6 +41,23 @@ interface PhaseWithTasks extends Phase {
   tasks: Task[];
 }
 
+// Hook for responsive grid columns
+function useGridColumns() {
+  const [cols, setCols] = useState(4);
+  useEffect(() => {
+    const handleResize = () => {
+      // These breakpoints match Tailwind's grid-cols-X logic below
+      if (window.innerWidth < 768) setCols(1);      // grid-cols-1
+      else if (window.innerWidth < 1024) setCols(2); // md:grid-cols-2
+      else setCols(4);                               // lg:grid-cols-4
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return cols;
+}
+
 // Draggable Phase Wrapper
 function DraggablePhase({ phase, onClick, onNameChange, isSelected }: { phase: Phase, onClick: () => void, onNameChange: (id: string, name: string) => void, isSelected: boolean }) {
   const {
@@ -83,6 +100,14 @@ export default function App() {
   const [targetProjectIdForPhase, setTargetProjectIdForPhase] = useState<string | null>(null);
 
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+
+  // Grid Logic
+  const gridCols = useGridColumns();
+  // Find index of selected phase in its project list (needs filtering first usually, but here we iterate all? No, we filter by project in the view loop).
+  // Wait, the View Loop iterates `projectPhases`.
+  // `projectPhases` is derived inside the `projects.map`.
+  // So I CANNOT calculate `selectedPhaseRow` broadly here. I must calculate it INSIDE the project map loop.
+  // So I should ONLY inject `gridCols` here.
 
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editProjectName, setEditProjectName] = useState("");
@@ -696,38 +721,54 @@ export default function App() {
 
                     {/* Phases Grid (2 Lines = ~4 cols) */}
                     <div className="relative">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-6">
-                        <SortableContext items={projectPhases.map(p => p.id)} strategy={rectSortingStrategy}>
-                          {projectPhases.map(phase => (
-                            <DraggablePhase
-                              key={phase.id}
-                              phase={phase}
-                              onClick={() => setSelectedPhaseId(selectedPhaseId === phase.id ? null : phase.id)}
-                              onNameChange={handlePhaseNameChange}
-                              isSelected={selectedPhaseId === phase.id}
-                            />
-                          ))}
-                        </SortableContext>
-                      </div>
+                      {(() => {
+                        const selectedPhaseIndex = projectPhases.findIndex(p => p.id === selectedPhaseId);
+                        const selectedPhaseRow = selectedPhaseIndex !== -1 ? Math.floor(selectedPhaseIndex / gridCols) : -1;
 
-                      {/* Expanded Phase View - Inline (Netflix Style) */}
-                      {isSelectedPhaseInThisProject && selectedPhase && (
-                        <PhaseExpandedView
-                          phase={selectedPhase}
-                          projectPhases={projectPhases}
-                          tasks={selectedPhase.tasks}
-                          onClose={() => setSelectedPhaseId(null)}
-                          onToggleTask={handleToggleTask}
-                          onAddTask={handleAddTask}
-                          onDeletePhase={handleDeletePhase}
-                          onEditTask={handleEditTask}
-                          onDeleteTask={handleDeleteTask}
-                          onMoveTask={handleMoveTask}
-                          onAddSubtask={handleAddSubtask}
-                          onToggleSubtask={handleToggleSubtask}
-                          onDeleteSubtask={handleDeleteSubtask}
-                        />
-                      )}
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-6">
+                            <SortableContext items={projectPhases.map(p => p.id)} strategy={rectSortingStrategy}>
+                              {projectPhases.map((phase, index) => {
+                                const currentRow = Math.floor(index / gridCols);
+                                const isLastItemInRow = (index + 1) % gridCols === 0 || index === projectPhases.length - 1;
+                                const shouldRenderExpandedView = isSelectedPhaseInThisProject && selectedPhase && selectedPhaseRow === currentRow && isLastItemInRow;
+
+                                return (
+                                  <div key={phase.id} className="contents">
+                                    <DraggablePhase
+                                      phase={phase}
+                                      onClick={() => setSelectedPhaseId(selectedPhaseId === phase.id ? null : phase.id)}
+                                      onNameChange={handlePhaseNameChange}
+                                      isSelected={selectedPhaseId === phase.id}
+                                    />
+                                    {shouldRenderExpandedView && (
+                                      <div className="col-span-1 md:col-span-2 lg:col-span-4 w-full order-last">
+                                        <PhaseExpandedView
+                                          phase={selectedPhase}
+                                          projectPhases={projectPhases}
+                                          tasks={selectedPhase.tasks}
+                                          onClose={() => setSelectedPhaseId(null)}
+                                          onToggleTask={handleToggleTask}
+                                          onAddTask={handleAddTask}
+                                          onDeletePhase={handleDeletePhase}
+                                          onEditTask={handleEditTask}
+                                          onDeleteTask={handleDeleteTask}
+                                          onMoveTask={handleMoveTask}
+                                          onAddSubtask={handleAddSubtask}
+                                          onToggleSubtask={handleToggleSubtask}
+                                          onDeleteSubtask={handleDeleteSubtask}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </SortableContext>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Old Expanded View Removed */}
                     </div>
                   </section>
                 );

@@ -46,7 +46,8 @@ export function TaskItem({
 }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(task.name);
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Auto-expand if there are subtasks
+  const [isExpanded, setIsExpanded] = useState(() => !!(task.subtasks && task.subtasks.length > 0));
   const [newSubtaskName, setNewSubtaskName] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
 
@@ -134,8 +135,8 @@ export function TaskItem({
                 <label
                   htmlFor={task.id}
                   className={`block text-sm cursor-pointer transition-all ${task.completed
-                      ? "line-through text-gray-400"
-                      : "text-gray-700 font-medium"
+                    ? "line-through text-gray-400"
+                    : "text-gray-700 font-medium"
                     }`}
                 >
                   {task.name}
