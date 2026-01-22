@@ -29,6 +29,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from "@dnd-kit/utilities";
+import { resetAndSeedDatabase } from "@/utils/seedData";
 
 interface Project {
   id: string;
@@ -545,9 +546,15 @@ export default function App() {
                 <p className="text-xs text-gray-500 font-medium lowercase tracking-wide">coming to life</p>
               </div>
             </div>
-            <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md px-6 py-6 text-lg">
-              <Plus className="w-5 h-5 mr-2" /> New Project
-            </Button>
+
+            <div className="flex gap-2">
+              <Button onClick={resetAndSeedDatabase} variant="destructive" className="bg-red-600 hover:bg-red-700 text-white shadow-md">
+                <Trash2 className="w-4 h-4 mr-2" /> Reset Data
+              </Button>
+              <Button onClick={() => setAddProjectDialogOpen(true)} className="bg-black hover:bg-gray-800 text-white shadow-md px-6 py-6 text-lg">
+                <Plus className="w-5 h-5 mr-2" /> New Project
+              </Button>
+            </div>
           </div>
         </header>
 

@@ -73,6 +73,7 @@ export const api = {
             .select()
             .single();
         if (error) throw error;
+        return data; // Return the task object
     },
 
     async updateTask(id: string, updates: any) {
